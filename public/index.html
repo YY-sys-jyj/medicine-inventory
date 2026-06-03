@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鍖昏嵂搴撳瓨鍔ㄩ攢涓庡洖娆剧鐞嗙郴缁?/title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f4f5f7;--surface:#fff;--border:#e1e4e8;--text:#1a1d23;--text2:#6b7280;--text3:#9ca3af;--accent:#2563eb;--accent-bg:#eff6ff;--red:#dc2626;--red-bg:#fef2f2;--yellow:#d97706;--yellow-bg:#fffbeb;--green:#16a34a;--green-bg:#f0fdf4;--radius:6px;--shadow:0 1px 3px rgba(0,0,0,.06);--sidebar-w:210px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55}
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 50%,#fffbeb 100%)}
+.login-page.hidden{display:none}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:36px 30px;width:380px;max-width:92vw;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-card h1{font-size:20px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:-.01em}
+.login-card .login-sub{font-size:12px;color:var(--text3);text-align:center;margin-bottom:28px}
+.login-card .form-group{margin-bottom:16px}
+.login-card .form-label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.login-card .form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;color:var(--text);transition:border-color .15s}
+.login-card .form-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.login-btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .12s;margin-top:4px}
+.login-btn:hover{background:#1d4ed8}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-error{color:var(--red);font-size:12px;text-align:center;margin-top:10px;min-height:18px}
+.login-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:16px;line-height:1.6}
+.app-container{display:flex;min-height:100vh}
+.app-container.hidden{display:none}
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:10}
+.sidebar-brand{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+.sidebar-brand h1{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.sidebar-brand .user-info{font-size:11px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:6px}
+.sidebar-nav{flex:1;padding:8px;display:flex;flex-direction:column;gap:1px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--radius);cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;border:none;background:none;width:100%;text-align:left;transition:all .12s}
+.nav-item:hover{background:#f3f4f6;color:var(--text)}
+.nav-item.active{background:var(--accent-bg);color:var(--accent)}
+.nav-item svg{width:17px;height:17px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center;line-height:1.6}
+.nav-badge.hidden{display:none}
+.sidebar-footer{padding:10px;border-top:1px solid var(--border)}
+.logout-btn{display:flex;align-items:center;gap:7px;width:100%;padding:8px 11px;border-radius:var(--radius);cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;border:none;background:none;text-align:left;transition:all .12s}
+.logout-btn:hover{background:#fef2f2;color:var(--red)}
+.logout-btn svg{width:15px;height:15px}
+.main{margin-left:var(--sidebar-w);flex:1;padding:22px 26px;min-width:0}
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.stat-label{font-size:11px;color:var(--text2);font-weight:500}
+.stat-value{font-size:24px;font-weight:700;margin-top:3px;letter-spacing:-.02em}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.stat-card.red .stat-value{color:var(--red)}
+.stat-card.yellow .stat-value{color:var(--yellow)}
+.stat-card.green .stat-value{color:var(--green)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.panel.hidden{display:none}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+.panel-head h2{font-size:14px;font-weight:600}
+.panel-body{padding:16px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all .12s;line-height:1.4;font-family:inherit}
+.btn:hover{background:#f9fafb}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#1d4ed8}
+.btn-danger{color:var(--red);border-color:#fecaca}
+.btn-danger:hover{background:var(--red-bg)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-group{display:flex;gap:6px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:9px 10px;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--text2);border-bottom:2px solid var(--border);background:#fafbfc;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:#fafbfc}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.search-input,.filter-select{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:inherit;color:var(--text);background:var(--surface)}
+.search-input{width:200px}
+.search-input:focus,.filter-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.modal-overlay.hidden{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border-radius:8px;width:460px;max-width:92vw;box-shadow:0 16px 48px rgba(0,0,0,.15);animation:slideUp .18s}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:14px;font-weight:600}
+.modal-close{background:none;border:none;cursor:pointer;padding:3px;border-radius:4px;color:var(--text3);line-height:1;font-size:16px}
+.modal-close:hover{background:#f3f4f6;color:var(--text)}
+.modal-body{padding:18px}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.form-group{margin-bottom:12px}
+.form-group:last-child{margin-bottom:0}
+.form-label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px}
+.form-input,.form-textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;color:var(--text);transition:border-color .15s}
+.form-input:focus,.form-textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.form-textarea{resize:vertical;min-height:60px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.warn-section{margin-bottom:18px}
+.warn-section:last-child{margin-bottom:0}
+.warn-section-title{font-size:13px;font-weight:600;padding:10px 14px;border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;gap:7px}
+.warn-section-title.red{background:var(--red-bg);color:var(--red)}
+.warn-section-title.yellow{background:var(--yellow-bg);color:var(--yellow)}
+.warn-list{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius)}
+.warn-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border)}
+.warn-item:last-child{border-bottom:none}
+.warn-item:hover{background:#fafbfc}
+.warn-info{display:flex;flex-direction:column;gap:2px}
+.warn-name{font-weight:600;font-size:13px}
+.warn-meta{font-size:11px;color:var(--text2)}
+.warn-action{flex-shrink:0}
+.report-section{margin-bottom:22px}
+.report-section:last-child{margin-bottom:0}
+.report-section h3{font-size:13px;font-weight:600;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.report-meta{display:flex;gap:18px;margin-bottom:14px;font-size:12px;color:var(--text2)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:9px 16px;border-radius:var(--radius);font-size:13px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.empty-state{text-align:center;padding:36px 20px;color:var(--text3)}
+.empty-state p{font-size:12px}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;font-size:14px;color:var(--text2)}
+.loading-overlay.hidden{display:none}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@media print{.sidebar,.btn,.modal-overlay,.filter-bar,.stats-bar{display:none!important}.main{margin-left:0;padding:0}.panel{box-shadow:none;border:none}}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay hidden" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">...</span></div>
+<div class="login-page" id="login-page">
+  <div class="login-card">
+    <h1>鍖昏嵂搴撳瓨鍔ㄩ攢绠＄悊</h1><p class="login-sub">鏁堟湡棰勮 & 鍥炴绠＄悊绯荤粺</p>
+    <div class="form-group"><label class="form-label">鎵嬫満鍙风爜</label><input class="form-input" type="tel" id="login-phone" placeholder="璇疯緭鍏ユ墜鏈哄彿鐮? maxlength="11" autocomplete="tel"></div>
+    <div class="form-group"><label class="form-label">瀵嗙爜</label><input class="form-input" type="password" id="login-password" placeholder="璁剧疆/杈撳叆瀵嗙爜锛堣嚦灏?浣嶏級" minlength="6" autocomplete="new-password"></div>
+    <button class="login-btn" id="login-btn" onclick="handleLogin()">鐧?褰?/button>
+    <div class="login-error" id="login-error"></div>
+    <p class="login-hint">棣栨鐧诲綍灏嗚嚜鍔ㄦ敞鍐岃处鍙?br>鎵嬫満鍙风爜浣滀负鍞竴韬唤鏍囪瘑</p>
+  </div>
+</div>
+<div class="app-container hidden" id="app-container">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><h1>鍖昏嵂搴撳瓨鍔ㄩ攢</h1><div class="user-info"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="sidebar-phone"></span></div></div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-tab="ledger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>鏁版嵁鍙拌处</button>
+      <button class="nav-item" data-tab="warnings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>棰勮鐪嬫澘<span class="nav-badge hidden" id="nav-warn-badge">0</span></button>
+      <button class="nav-item" data-tab="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>搴撳瓨鍔ㄩ攢鎶ュ憡</button>
+      <button class="nav-item" data-tab="payment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>鍥炴绠＄悊<span class="nav-badge hidden" id="nav-pay-badge">0</span></button>
+    </nav>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="handleLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>閫€鍑虹櫥褰?/button></div>
+  </aside>
+  <main class="main">
+    <div class="stats-bar" id="stats-bar"></div>
+    <div class="panel" id="panel-ledger"><div class="panel-head"><h2>鍝佺搴撳瓨鍙拌处</h2><div class="btn-group"><button class="btn btn-sm" onclick="seedDemoData()">婕旂ず鏁版嵁</button><button class="btn btn-primary btn-sm" onclick="openProductModal()">+ 鏂板鍝佺</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="鎼滅储鍝佺鍚嶇О..." id="search-ledger" oninput="renderLedger()"><select class="filter-select" id="filter-status" onchange="renderLedger()"><option value="all">鍏ㄩ儴鐘舵€?/option><option value="red">绾㈢伅棰勮</option><option value="yellow">榛勭伅棰勮</option><option value="green">姝ｅ父</option></select></div><div id="ledger-content"></div></div></div>
+    <div class="panel hidden" id="panel-warnings"><div class="panel-head"><h2>鏁堟湡棰勮鐪嬫澘</h2><button class="btn btn-sm" onclick="exportWarningsCSV()">瀵煎嚭娓呭崟</button></div><div class="panel-body" id="warnings-content"></div></div>
+    <div class="panel hidden" id="panel-report"><div class="panel-head"><h2>搴撳瓨鍔ㄩ攢鎶ュ憡</h2><div class="btn-group"><button class="btn btn-sm" onclick="window.print()">鎵撳嵃</button><button class="btn btn-sm" onclick="exportReportCSV()">瀵煎嚭CSV</button></div></div><div class="panel-body" id="report-content"></div></div>
+    <div class="panel hidden" id="panel-payment"><div class="panel-head"><h2>鍖婚櫌鍥炴鍙拌处</h2><button class="btn btn-primary btn-sm" onclick="openPaymentModal()">+ 鏂板鍖婚櫌</button></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="鎼滅储鍖婚櫌鍚嶇О..." id="search-payment" oninput="renderPayments()"><select class="filter-select" id="filter-pay-status" onchange="renderPayments()"><option value="all">鍏ㄩ儴鐘舵€?/option><option value="due">鍗冲皢鍒版湡</option><option value="upcoming">寰呭洖娆?/option><option value="paid">宸插洖娆?/option></select></div><div id="payment-content"></div></div></div>
+  </main>
+</div>
+<div class="modal-overlay hidden" id="product-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="product-modal-title">鍝佺</h3><button class="modal-close" onclick="closeProductModal()">X</button></div><div class="modal-body"><div class="form-group"><label class="form-label">鍝佺鍚嶇О</label><input class="form-input" id="f-name" placeholder="闃胯帿瑗挎灄鑳跺泭 0.5gx24绮?></div><div class="form-group"><label class="form-label">鎵瑰彿</label><input class="form-input" id="f-batch" placeholder="20250601A"></div><div class="form-row"><div class="form-group"><label class="form-label">鏈夋晥鏈熻嚦</label><input class="form-input" type="date" id="f-expiry"></div><div class="form-group"><label class="form-label">搴撳瓨閲?/label><input class="form-input" type="number" id="f-stock" min="0" placeholder="0"></div></div><div class="form-group"><label class="form-label">鏈€杩戜竴涓湀閿€閲?/label><input class="form-input" type="number" id="f-sales" min="0" placeholder="0"></div><input type="hidden" id="f-id"></div><div class="modal-foot"><button class="btn" onclick="closeProductModal()">鍙栨秷</button><button class="btn btn-primary" onclick="saveProduct()">淇濆瓨</button></div></div></div>
+<div class="modal-overlay hidden" id="payment-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="payment-modal-title">鍖婚櫌</h3><button class="modal-close" onclick="closePaymentModal()">X</button></div><div class="modal-body"><div class="form-group"><label class="form-label">鍖婚櫌鍚嶇О</label><input class="form-input" id="fp-hospital" placeholder="XX甯備汉姘戝尰闄?></div><div class="form-row"><div class="form-group"><label class="form-label">浠樻鍛ㄦ湡</label><select class="form-input" id="fp-cycle"><option value="姣忔湀">姣忔湀</option><option value="姣忓搴? selected>姣忓搴?/option><option value="姣忓崐骞?>姣忓崐骞?/option><option value="姣忓勾">姣忓勾</option><option value="涓嶅畾鏈?>涓嶅畾鏈?/option></select></div><div class="form-group"><label class="form-label">涓嬫鍥炴鏃ユ湡</label><input class="form-input" type="date" id="fp-date"></div></div><div class="form-group"><label class="form-label">棰勮鍥炴閲戦</label><input class="form-input" type="number" id="fp-amount" min="0" placeholder="0"></div><div class="form-group"><label class="form-label">浠樻娴佺▼璇存槑</label><textarea class="form-textarea" id="fp-process" placeholder="鑽墏绉戞彁浜?鍒嗙闄㈤暱瀹℃壒-璐㈠姟绉戜粯娆?></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">鍏抽敭鑱旂郴浜?/label><input class="form-input" id="fp-contact" placeholder="濮撳悕"></div><div class="form-group"><label class="form-label">鑱屽姟</label><input class="form-input" id="fp-role" placeholder="閲囪喘鍔炰富浠?></div></div><div class="form-group"><label class="form-label">鑱旂郴鐢佃瘽</label><input class="form-input" id="fp-phone" placeholder="鎵嬫満鎴栧骇鏈?></div><div class="form-group"><label class="form-label">澶囨敞</label><input class="form-input" id="fp-notes" placeholder="鍏朵粬淇℃伅"></div><input type="hidden" id="fp-id"></div><div class="modal-foot"><button class="btn" onclick="closePaymentModal()">鍙栨秷</button><button class="btn btn-primary" onclick="savePayment()">淇濆瓨</button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
+const SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
+let supabase=null,currentUser=null,products=[],payments=[],activeTab='ledger';
+
+function phoneToEmail(p){return'user_'+p.replace(/\D/g,'')+'@rx.user'}
+function showLoading(m){document.getElementById('loading-text').textContent=m||'...';document.getElementById('loading-overlay').classList.remove('hidden')}
+function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}
+
+async function handleLogin(){
+  const phone=document.getElementById('login-phone').value.trim();
+  const pw=document.getElementById('login-password').value;
+  const err=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  err.textContent='';
+  if(!/^1[3-9]\d{9}$/.test(phone)){err.textContent='璇疯緭鍏ユ湁鏁堢殑11浣嶆墜鏈哄彿鐮?;return}
+  if(pw.length<6){err.textContent='瀵嗙爜鑷冲皯6浣?;return}
+  if(!supabase){err.textContent='绯荤粺鏈厤缃甋upabase锛岃鑱旂郴绠＄悊鍛?;return}
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>楠岃瘉涓?..';
+  const email=phoneToEmail(phone);
+  let{data,error}=await supabase.auth.signInWithPassword({email,password:pw});
+  if(error&&error.message.includes('Invalid login credentials')){
+    const{error:se}=await supabase.auth.signUp({email,password:pw});
+    if(se){err.textContent='娉ㄥ唽澶辫触锛?+se.message;btn.disabled=false;btn.innerHTML='鐧诲綍';return}
+    const{data:rd,error:re}=await supabase.auth.signInWithPassword({email,password:pw});
+    if(re){err.textContent='鐧诲綍澶辫触锛?+re.message;btn.disabled=false;btn.innerHTML='鐧诲綍';return}
+    data=rd;
+  }else if(error){err.textContent='鐧诲綍澶辫触锛?+error.message;btn.disabled=false;btn.innerHTML='鐧诲綍';return}
+  currentUser=data.user;
+  if(!currentUser.user_metadata?.phone)await supabase.auth.updateUser({data:{phone}});
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('app-container').classList.remove('hidden');
+  document.getElementById('sidebar-phone').textContent=phone;
+  loadData();
+}
+
+async function handleLogout(){
+  if(supabase)await supabase.auth.signOut();
+  currentUser=null;products=[];payments=[];
+  document.getElementById('app-container').classList.add('hidden');
+  document.getElementById('login-page').classList.remove('hidden');
+  document.getElementById('login-password').value='';
+  document.getElementById('login-btn').innerHTML='鐧诲綍';
+  document.getElementById('login-btn').disabled=false;
+}
+
+async function initSupabase(){
+  if(!SUPABASE_URL.includes('YOUR_PROJECT_ID')){
+    supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    const{data:{session}}=await supabase.auth.getSession();
+    if(session){currentUser=session.user;const phone=currentUser.user_metadata?.phone||'';document.getElementById('login-page').classList.add('hidden');document.getElementById('app-container').classList.remove('hidden');document.getElementById('sidebar-phone').textContent=phone;loadData()}
+  }
+}
+
+async function loadData(){
+  if(!supabase||!currentUser)return;
+  showLoading('鍔犺浇鏁版嵁...');
+  const{data:prods}=await supabase.from('products').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(prods)products=prods;
+  const{data:pays}=await supabase.from('payments').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(pays)payments=pays;
+  hideLoading();refresh();renderLedger();
+}
+
+function monthsToExpiry(p){const now=new Date();now.setHours(0,0,0,0);return(new Date(p.expiry_date||p.expiryDate)-now)/(86400000*30.44)}
+function warnLevel(p){const m=monthsToExpiry(p);if(m<=3)return'red';if(m<=6)return'yellow';return'green'}
+function dailySales(p){return(p.last_month_sales||p.lastMonthSales||0)/30}
+function turnoverDays(p){const d=dailySales(p);return d>0?Math.round((p.stock||0)/d):Infinity}
+function isSlow(p){return(p.stock||0)>0&&turnoverDays(p)>180}
+function daysUntil(ds){const now=new Date();now.setHours(0,0,0,0);return Math.ceil((new Date(ds)-now)/86400000)}
+function payStatus(p){if(p.paid)return'paid';return daysUntil(p.next_date||p.nextDate)<=7?'due':'upcoming'}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+
+function renderStats(){
+  const rC=products.filter(p=>warnLevel(p)==='red').length;
+  const yC=products.filter(p=>warnLevel(p)==='yellow').length;
+  const tS=products.reduce((s,p)=>s+(p.stock||0),0);
+  const tL=products.reduce((s,p)=>s+(p.last_month_sales||p.lastMonthSales||0),0);
+  const pD=payments.filter(p=>payStatus(p)==='due').length;
+  const pT=payments.filter(p=>!p.paid).reduce((s,p)=>s+(p.amount||0),0);
+  document.getElementById('stats-bar').innerHTML='<div class="stat-card"><div class="stat-label">鎬诲搧绉?/div><div class="stat-value">'+products.length+'</div></div><div class="stat-card"><div class="stat-label">鎬诲簱瀛?/div><div class="stat-value">'+tS.toLocaleString()+'</div><div class="stat-sub">鏈堥攢 '+tL.toLocaleString()+'</div></div><div class="stat-card red"><div class="stat-label">绾㈢伅</div><div class="stat-value">'+rC+'</div></div><div class="stat-card yellow"><div class="stat-label">榛勭伅</div><div class="stat-value">'+yC+'</div></div>'+(payments.length>0?'<div class="stat-card green"><div class="stat-label">寰呭洖娆?/div><div class="stat-value">'+(pT/10000).toFixed(1)+'涓?/div><div class="stat-sub">'+pD+'瀹跺埌鏈?/div></div>':'');
+  const wb=document.getElementById('nav-warn-badge'),wt=rC+yC;
+  if(wt>0){wb.textContent=wt;wb.classList.remove('hidden')}else{wb.classList.add('hidden')}
+  const pb=document.getElementById('nav-pay-badge');
+  if(pD>0){pb.textContent=pD;pb.classList.remove('hidden')}else{pb.classList.add('hidden')}
+}
+
+function renderLedger(){
+  const s=(document.getElementById('search-ledger')?.value||'').toLowerCase();
+  const fs=document.getElementById('filter-status')?.value||'all';
+  let list=[...products];
+  if(fs!=='all')list=list.filter(p=>warnLevel(p)===fs);
+  if(s)list=list.filter(p=>(p.name||'').toLowerCase().includes(s));
+  list.sort((a,b)=>{const o={red:0,yellow:1,green:2},da=o[warnLevel(a)],db=o[warnLevel(b)];return da!==db?da-db:new Date(a.expiry_date||a.expiryDate)-new Date(b.expiry_date||b.expiryDate)});
+  const c=document.getElementById('ledger-content');
+  if(!list.length){c.innerHTML='<div class="empty-state"><p>鏆傛棤鏁版嵁</p></div>';return}
+  c.innerHTML='<table><thead><tr><th>鍝佺</th><th>鎵瑰彿</th><th>鏈夋晥鏈?/th><th>鍓╀綑</th><th>搴撳瓨</th><th>鏈堥攢</th><th>鏃ュ潎</th><th>鍛ㄨ浆澶?/th><th>鐘舵€?/th><th>鎿嶄綔</th></tr></thead><tbody>'+list.map(p=>{
+    const lv=warnLevel(p),m=monthsToExpiry(p),ds=dailySales(p),to=turnoverDays(p),slow=isSlow(p);
+    const st={red:'绾㈢伅',yellow:'榛勭伅',green:'姝ｅ父'}[lv];
+    return'<tr><td><strong>'+esc(p.name||'')+'</strong></td><td><code>'+esc(p.batch||'')+'</code></td><td>'+fmtDate(p.expiry_date||p.expiryDate)+'</td><td>'+(m>0?m.toFixed(1)+'鏈?:'<span style="color:var(--red)">杩囨湡</span>')+'</td><td>'+(p.stock||0).toLocaleString()+'</td><td>'+(p.last_month_sales||p.lastMonthSales||0).toLocaleString()+'</td><td>'+ds.toFixed(1)+'</td><td>'+(to===Infinity?'-':to+'澶?)+(slow&&lv!=='green'?' <span style="color:var(--yellow);font-size:10px">鎱?/span>':'')+'</td><td><span class="badge badge-'+lv+'">'+st+'</span></td><td><div class="btn-group"><button class="btn btn-sm" onclick="openProductModal(\''+p.id+'\')">缂栬緫</button><button class="btn btn-sm btn-danger" onclick="deleteProduct(\''+p.id+'\')">鍒犻櫎</button></div></td></tr>';
+  }).join('')+'</tbody></table>';
+}
+
+function renderWarnings(){
+  const reds=products.filter(p=>warnLevel(p)==='red');
+  const yels=products.filter(p=>warnLevel(p)==='yellow'&&isSlow(p));
+  const c=document.getElementById('warnings-content');
+  let h='<div class="warn-section"><div class="warn-section-title red">绾㈢伅 - 鏁堟湡3涓湀 ('+reds.length+'涓?</div><div class="warn-list">';
+  if(!reds.length)h+='<div class="empty-state"><p>鏃犵孩鐏搧绉?/p></div>';
+  else reds.forEach(p=>{h+='<div class="warn-item"><div class="warn-info"><span class="warn-name">'+esc(p.name||'')+'</span><span class="warn-meta">鎵瑰彿 '+esc(p.batch||'')+' 路 鏁堟湡 '+fmtDate(p.expiry_date||p.expiryDate)+' 路 搴撳瓨 '+(p.stock||0)+' 路 鍓?'+monthsToExpiry(p).toFixed(1)+'鏈?/span></div><div class="warn-action"><span class="badge badge-red">绔嬪嵆姹囨姤</span></div></div>'})
+  h+='</div></div><div class="warn-section"><div class="warn-section-title yellow">榛勭伅 - 鏁堟湡3-6鏈?鍔ㄩ攢鎱?('+yels.length+'涓?</div><div class="warn-list">';
+  if(!yels.length)h+='<div class="empty-state"><p>鏃犻粍鐏搧绉?/p></div>';
+  else yels.forEach(p=>{h+='<div class="warn-item"><div class="warn-info"><span class="warn-name">'+esc(p.name||'')+'</span><span class="warn-meta">鎵瑰彿 '+esc(p.batch||'')+' 路 鏁堟湡 '+fmtDate(p.expiry_date||p.expiryDate)+' 路 搴撳瓨 '+(p.stock||0)+' 路 鏈堥攢 '+(p.last_month_sales||p.lastMonthSales||0)+'</span></div><div class="warn-action"><span class="badge badge-yellow">淇冮攢鎺ㄥ箍</span></div></div>'})
+  h+='</div></div>';c.innerHTML=h;
+}
+
+function renderReport(){
+  const now=new Date(),dt=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const tS=products.reduce((s,p)=>s+(p.stock||0),0),tL=products.reduce((s,p)=>s+(p.last_month_sales||p.lastMonthSales||0),0);
+  const tR=tL>0?(tS/(tL/30)).toFixed(1):'-';
+  const near=products.filter(p=>warnLevel(p)!=='green').sort((a,b)=>new Date(a.expiry_date||a.expiryDate)-new Date(b.expiry_date||b.expiryDate));
+  const c=document.getElementById('report-content');
+  let h='<div class="report-meta"><span>鏃ユ湡锛?strong>'+dt+'</strong></span><span>鍝佺锛?strong>'+products.length+'</strong></span><span>搴撳瓨锛?strong>'+tS.toLocaleString()+'</strong></span></div>';
+  h+='<div class="report-section"><h3>閿€鍞儏鍐?/h3><table><thead><tr><th>鍝佺</th><th>鎵瑰彿</th><th>搴撳瓨</th><th>鏈堥攢</th><th>鏃ュ潎</th><th>鍛ㄨ浆澶?/th><th>鐘舵€?/th></tr></thead><tbody>';
+  [...products].sort((a,b)=>(b.last_month_sales||b.lastMonthSales||0)-(a.last_month_sales||a.lastMonthSales||0)).forEach(p=>{const lv=warnLevel(p);h+='<tr><td>'+esc(p.name||'')+'</td><td>'+esc(p.batch||'')+'</td><td>'+(p.stock||0)+'</td><td>'+(p.last_month_sales||p.lastMonthSales||0)+'</td><td>'+dailySales(p).toFixed(1)+'</td><td>'+(turnoverDays(p)===Infinity?'-':turnoverDays(p))+'</td><td><span class="badge badge-'+lv+'">'+{red:'绾㈢伅',yellow:'榛勭伅',green:'姝ｅ父'}[lv]+'</span></td></tr>'});
+  h+='</tbody></table></div><div class="report-section"><h3>鍛ㄨ浆姒傚喌</h3><p style="font-size:12px;color:var(--text2)">鍛ㄨ浆澶╂暟锛?strong>'+tR+'</strong> 路 鏈堥攢锛?strong>'+tL.toLocaleString()+'</strong> 路 搴撳瓨锛?strong>'+tS.toLocaleString()+'</strong></p></div>';
+  h+='<div class="report-section"><h3>涓磋繎鏁堟湡</h3>';
+  if(!near.length)h+='<p style="font-size:12px;color:var(--text3)">鏃犱复杩戞晥鏈熷搧绉?/p>';
+  else{h+='<table><thead><tr><th>鍝佺</th><th>鎵瑰彿</th><th>鏁堟湡</th><th>鍓╂湀</th><th>搴撳瓨</th><th>绾у埆</th><th>鎺柦</th></tr></thead><tbody>';
+    near.forEach(p=>{const lv=warnLevel(p);h+='<tr><td>'+esc(p.name||'')+'</td><td>'+esc(p.batch||'')+'</td><td>'+fmtDate(p.expiry_date||p.expiryDate)+'</td><td>'+monthsToExpiry(p).toFixed(1)+'鏈?/td><td>'+(p.stock||0)+'</td><td><span class="badge badge-'+lv+'">'+(lv==='red'?'绾㈢伅':'榛勭伅')+'</span></td><td>'+(lv==='red'?'绔嬪嵆姹囨姤':'淇冮攢鎺ㄥ箍')+'</td></tr>'})
+    h+='</tbody></table>'}h+='</div>';c.innerHTML=h;
+}
+
+function renderPayments(){
+  const s=(document.getElementById('search-payment')?.value||'').toLowerCase();
+  const fs=document.getElementById('filter-pay-status')?.value||'all';
+  let list=[...payments];
+  if(fs!=='all')list=list.filter(p=>payStatus(p)===fs);
+  if(s)list=list.filter(p=>(p.hospital||'').toLowerCase().includes(s));
+  list.sort((a,b)=>{const o={due:0,upcoming:1,paid:2},sa=o[payStatus(a)],sb=o[payStatus(b)];return sa!==sb?sa-sb:new Date(a.next_date||a.nextDate)-new Date(b.next_date||b.nextDate)});
+  const c=document.getElementById('payment-content');
+  if(!list.length){c.innerHTML='<div class="empty-state"><p>鏆傛棤鍖婚櫌璁板綍</p></div>';return}
+  c.innerHTML='<table><thead><tr><th>鍖婚櫌</th><th>鍛ㄦ湡</th><th>鍥炴鏃?/th><th>鍓╀綑</th><th>閲戦</th><th>鑱旂郴浜?/th><th>娴佺▼</th><th>鐘舵€?/th><th>鎿嶄綔</th></tr></thead><tbody>'+list.map(p=>{
+    const st=payStatus(p),d=daysUntil(p.next_date||p.nextDate);
+    const stT={due:'鍗冲皢鍒版湡',upcoming:'寰呭洖娆?,paid:'宸插洖娆?}[st];
+    const stB=st==='due'?'badge-red':st==='paid'?'badge-green':'badge-yellow';
+    const daysD=p.paid?'-':(d<=7?'<span style="color:var(--red);font-weight:700">'+d+'澶?/span>':d+'澶?);
+    const tc=p.paid?'var(--yellow)':'var(--green)';
+    return'<tr><td><strong>'+esc(p.hospital||'')+'</strong></td><td>'+esc(p.cycle||'')+'</td><td>'+fmtDate(p.next_date||p.nextDate)+'</td><td>'+daysD+'</td><td>'+((p.amount||0)).toLocaleString()+'</td><td>'+esc(p.contact||'')+'<br><span style="font-size:10px;color:var(--text3)">'+esc(p.role||'')+' '+esc(p.phone||'')+'</span></td><td><span style="font-size:11px;color:var(--text2)">'+esc(p.process||'-')+'</span></td><td><span class="badge '+stB+'">'+stT+'</span></td><td><div class="btn-group"><button class="btn btn-sm" onclick="openPaymentModal(\''+p.id+'\')">缂栬緫</button><button class="btn btn-sm" style="color:'+tc+'" onclick="togglePaid(\''+p.id+'\')">'+(p.paid?'u':'v')+'</button><button class="btn btn-sm btn-danger" onclick="deletePayment(\''+p.id+'\')">鍒犻櫎</button></div></td></tr>';
+  }).join('')+'</tbody></table>';
+}
+
+function switchTab(tab){activeTab=tab;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.tab===tab));document.querySelectorAll('[id^="panel-"]').forEach(e=>e.classList.add('hidden'));document.getElementById('panel-'+tab).classList.remove('hidden');if(tab==='ledger')renderLedger();if(tab==='warnings')renderWarnings();if(tab==='report')renderReport();if(tab==='payment')renderPayments()}
+
+let editPid=null;
+function openProductModal(id){editPid=id||null;document.getElementById('product-modal-overlay').classList.remove('hidden');document.getElementById('product-modal-title').textContent=id?'缂栬緫鍝佺':'鏂板鍝佺';if(id){const p=products.find(x=>x.id===id);if(p){document.getElementById('f-name').value=p.name||'';document.getElementById('f-batch').value=p.batch||'';document.getElementById('f-expiry').value=p.expiry_date||p.expiryDate||'';document.getElementById('f-stock').value=p.stock||0;document.getElementById('f-sales').value=p.last_month_sales||p.lastMonthSales||0;document.getElementById('f-id').value=p.id}}else{['f-name','f-batch','f-expiry','f-stock','f-sales','f-id'].forEach(x=>document.getElementById(x).value='')}}
+function closeProductModal(){document.getElementById('product-modal-overlay').classList.add('hidden');editPid=null}
+async function saveProduct(){const nm=document.getElementById('f-name').value.trim();const bt=document.getElementById('f-batch').value.trim();const ex=document.getElementById('f-expiry').value;const st=parseInt(document.getElementById('f-stock').value)||0;const sa=parseInt(document.getElementById('f-sales').value)||0;const id=document.getElementById('f-id').value;if(!nm||!bt||!ex)return toast('璇峰～鍐欏畬鏁翠俊鎭?);showLoading('淇濆瓨涓?..');const row={name:nm,batch:bt,expiry_date:ex,stock:st,last_month_sales:sa,user_id:currentUser.id};if(id){await supabase.from('products').update(row).eq('id',id).eq('user_id',currentUser.id)}else{row.id=uid();await supabase.from('products').insert(row)}await loadData();closeProductModal();hideLoading();toast(id?'宸叉洿鏂?:'宸叉坊鍔?)}
+async function deleteProduct(id){if(!confirm('纭畾鍒犻櫎锛?))return;showLoading('...');await supabase.from('products').delete().eq('id',id).eq('user_id',currentUser.id);await loadData();hideLoading();toast('宸插垹闄?)}
+
+let editPayId=null;
+function openPaymentModal(id){editPayId=id||null;document.getElementById('payment-modal-overlay').classList.remove('hidden');document.getElementById('payment-modal-title').textContent=id?'缂栬緫鍖婚櫌':'鏂板鍖婚櫌';if(id){const p=payments.find(x=>x.id===id);if(p){document.getElementById('fp-hospital').value=p.hospital||'';document.getElementById('fp-cycle').value=p.cycle||'姣忓搴?;document.getElementById('fp-date').value=p.next_date||p.nextDate||'';document.getElementById('fp-amount').value=p.amount||'';document.getElementById('fp-process').value=p.process||'';document.getElementById('fp-contact').value=p.contact||'';document.getElementById('fp-role').value=p.role||'';document.getElementById('fp-phone').value=p.phone||'';document.getElementById('fp-notes').value=p.notes||'';document.getElementById('fp-id').value=p.id}}else{['fp-hospital','fp-cycle','fp-date','fp-amount','fp-process','fp-contact','fp-role','fp-phone','fp-notes','fp-id'].forEach(x=>document.getElementById(x).value='')}}
+function closePaymentModal(){document.getElementById('payment-modal-overlay').classList.add('hidden');editPayId=null}
+async function savePayment(){const hsp=document.getElementById('fp-hospital').value.trim();const cy=document.getElementById('fp-cycle').value;const nd=document.getElementById('fp-date').value;const am=parseInt(document.getElementById('fp-amount').value)||0;const pr=document.getElementById('fp-process').value.trim();const co=document.getElementById('fp-contact').value.trim();const ro=document.getElementById('fp-role').value.trim();const ph=document.getElementById('fp-phone').value.trim();const no=document.getElementById('fp-notes').value.trim();const id=document.getElementById('fp-id').value;if(!hsp||!nd)return toast('璇峰～鍐欏尰闄㈠拰鏃ユ湡');showLoading('淇濆瓨涓?..');const row={hospital:hsp,cycle:cy,next_date:nd,amount:am,process:pr,contact:co,role:ro,phone:ph,notes:no,user_id:currentUser.id};if(id){await supabase.from('payments').update(row).eq('id',id).eq('user_id',currentUser.id)}else{row.id=uid();row.paid=false;await supabase.from('payments').insert(row)}await loadData();closePaymentModal();hideLoading();toast(id?'宸叉洿鏂?:'宸叉坊鍔?)}
+async function deletePayment(id){if(!confirm('纭畾鍒犻櫎锛?))return;showLoading('...');await supabase.from('payments').delete().eq('id',id).eq('user_id',currentUser.id);await loadData();hideLoading();toast('宸插垹闄?)}
+async function togglePaid(id){const p=payments.find(x=>x.id===id);if(!p)return;showLoading('...');await supabase.from('payments').update({paid:!p.paid}).eq('id',id).eq('user_id',currentUser.id);await loadData();hideLoading();toast(p.paid?'宸叉爣璁板緟鍥炴':'宸叉爣璁板洖娆?)}
+
+function exportReportCSV(){const hd=['鍝佺','鎵瑰彿','鏁堟湡','鍓╂湀','搴撳瓨','鏈堥攢','鏃ュ潎','鍛ㄨ浆澶?,'鐘舵€?];const rows=products.map(p=>[p.name||'',p.batch||'',p.expiry_date||p.expiryDate||'',monthsToExpiry(p).toFixed(1),p.stock||0,p.last_month_sales||p.lastMonthSales||0,dailySales(p).toFixed(1),turnoverDays(p)===Infinity?'':turnoverDays(p),{red:'绾㈢伅',yellow:'榛勭伅',green:'姝ｅ父'}[warnLevel(p)]]);downloadCSV(hd,rows,'搴撳瓨鎶ュ憡_'+new Date().toISOString().slice(0,10)+'.csv')}
+function exportWarningsCSV(){const all=[...products.filter(p=>warnLevel(p)==='red'),...products.filter(p=>warnLevel(p)==='yellow'&&isSlow(p))];if(!all.length)return toast('鏃犻璀﹀搧绉?);const hd=['鍝佺','鎵瑰彿','鏁堟湡','鍓╂湀','搴撳瓨','鏈堥攢','绾у埆','鎺柦'];const rows=all.map(p=>[p.name||'',p.batch||'',p.expiry_date||p.expiryDate||'',monthsToExpiry(p).toFixed(1),p.stock||0,p.last_month_sales||p.lastMonthSales||0,warnLevel(p)==='red'?'绾㈢伅':'榛勭伅',warnLevel(p)==='red'?'绔嬪嵆姹囨姤':'淇冮攢鎺ㄥ箍']);downloadCSV(hd,rows,'棰勮娓呭崟_'+new Date().toISOString().slice(0,10)+'.csv')}
+function downloadCSV(headers,rows,filename){const csv='\uFEFF'+[headers,...rows].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();toast('宸插鍑?)}
+
+async function seedDemoData(){if(!supabase||!currentUser)return;if(products.length>0&&payments.length>0){toast('宸叉湁鏁版嵁');return}showLoading('鐢熸垚婕旂ず鏁版嵁...');const now=new Date();const am=(d,m)=>{const r=new Date(d);r.setMonth(r.getMonth()+m);return r};const ad=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r};const f=(d)=>d.toISOString().slice(0,10);if(!products.length){await supabase.from('products').insert([{id:'p1',name:'闃胯帿瑗挎灄鑳跺泭 0.5gx24绮?,batch:'250315A',expiry_date:f(am(now,2)),stock:480,last_month_sales:32,user_id:currentUser.id},{id:'p2',name:'闃胯帿瑗挎灄鑳跺泭 0.5gx24绮?,batch:'251102B',expiry_date:f(am(now,14)),stock:1200,last_month_sales:185,user_id:currentUser.id},{id:'p3',name:'濂ョ編鎷夊攽鑲犳憾鑳跺泭 20mgx14绮?,batch:'241208C',expiry_date:f(am(now,5)),stock:360,last_month_sales:28,user_id:currentUser.id},{id:'p4',name:'姘浄浠栧畾鐗?10mgx12鐗?,batch:'250420D',expiry_date:f(am(now,1)),stock:200,last_month_sales:55,user_id:currentUser.id},{id:'p5',name:'澶村鍏嬭偀鍒嗘暎鐗?0.1gx6鐗?,batch:'250601E',expiry_date:f(am(now,12)),stock:800,last_month_sales:210,user_id:currentUser.id},{id:'p6',name:'甯冩礇鑺紦閲婅兌鍥?0.3gx20绮?,batch:'241130F',expiry_date:f(am(now,4)),stock:520,last_month_sales:42,user_id:currentUser.id},{id:'p7',name:'鐩愰吀姘ㄦ捍绱㈠彛鏈嶆恫 100ml',batch:'250215G',expiry_date:f(am(now,3)),stock:150,last_month_sales:88,user_id:currentUser.id}])}if(!payments.length){await supabase.from('payments').insert([{id:'h1',hospital:'甯傜涓€浜烘皯鍖婚櫌',cycle:'姣忓搴?,next_date:f(ad(now,5)),amount:85000,process:'鑽墏绉?闄㈤暱-璐㈠姟绉?,contact:'鐜嬩富浠?,role:'閲囪喘鍔炰富浠?,phone:'138****6721',notes:'瀛ｅ害鏈粨绠?,paid:false,user_id:currentUser.id},{id:'h2',hospital:'甯備腑蹇冨尰闄?,cycle:'姣忔湀',next_date:f(ad(now,3)),amount:32000,process:'鏈堝害瀵硅处浠樻',contact:'鏉庣闀?,role:'璐㈠姟绉戠闀?,phone:'139****3842',notes:'',paid:false,user_id:currentUser.id},{id:'h3',hospital:'鍖轰汉姘戝尰闄?,cycle:'姣忓崐骞?,next_date:f(ad(now,8)),amount:156000,process:'鍐呴儴瀹¤娴佺▼',contact:'寮犺€佸笀',role:'鑽墏绉戜富浠?,phone:'136****9503',notes:'鎻愬墠涓ゅ懆瀵硅处',paid:false,user_id:currentUser.id},{id:'h4',hospital:'甯傜涓変汉姘戝尰闄?,cycle:'姣忓搴?,next_date:f(ad(now,45)),amount:62000,process:'绉戝纭-鎵撴',contact:'璧典富浠?,role:'閲囪喘鍔炰富浠?,phone:'137****2188',notes:'',paid:false,user_id:currentUser.id},{id:'h5',hospital:'鍖诲闄㈤檮灞炲尰闄?,cycle:'涓嶅畾鏈?,next_date:f(ad(now,1)),amount:28000,process:'鐢佃瘽鍌-鐗规壒',contact:'鍒樿€佸笀',role:'璐㈠姟绉?,phone:'135****7409',notes:'鏈堝垵鑱旂郴',paid:false,user_id:currentUser.id}])}await loadData();hideLoading();toast('婕旂ず鏁版嵁宸插姞杞?)}
+
+function fmtDate(ds){if(!ds)return'-';const d=new Date(ds);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function refresh(){renderStats();if(activeTab==='ledger')renderLedger();if(activeTab==='warnings')renderWarnings();if(activeTab==='report')renderReport();if(activeTab==='payment')renderPayments()}
+function toast(msg){const e=document.querySelector('.toast');if(e)e.remove();const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2000)}
+
+document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+document.getElementById('product-modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeProductModal()});
+document.getElementById('payment-modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closePaymentModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeProductModal();closePaymentModal()}});
+document.getElementById('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});
+initSupabase();
+</script>
+</body>
+</html>

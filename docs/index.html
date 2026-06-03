@@ -170,13 +170,7 @@ tr:hover td{background:#fafbfc}
 <div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div>
 <script>
 var SUPER_ADMIN_PHONE='18089502376';
-(function loadSupabase(){
-  var s=document.createElement('script');
-  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-  s.onload=function(){initApp()};
-  s.onerror=function(){document.getElementById('login-error').textContent='网络异常，请刷新'};
-  document.head.appendChild(s);
-})();
+// Supabase loaded via static script tag in <head>
 var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
 var supabase=null,currentUser=null,userRole=null,products=[],payments=[],activeTab='ledger';
@@ -420,6 +414,8 @@ document.getElementById('payment-modal-overlay').addEventListener('click',functi
 document.getElementById('admin-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeAdminModal()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
+
+if(typeof window.supabase!=='undefined'){initApp()}
 </script>
 </body>
 </html>

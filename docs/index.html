@@ -129,7 +129,9 @@ tr:hover td{background:#fafbfc}
 .admin-section h3{font-size:13px;font-weight:600;margin-bottom:10px}
 @media print{.sidebar,.btn,.modal-overlay,.filter-bar,.stats-bar{display:none!important}.main{margin-left:0;padding:0}.panel{box-shadow:none;border:none}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="document.getElementById('login-error').textContent='CDN加载失败，请刷新页面'">
+setTimeout(function(){if(typeof window.supabase!=="undefined"){initApp()}else{document.getElementById("login-error").textContent="CDN加载失败，请刷新"}},200)
+</script>
 </head>
 <body>
 <div class="loading-overlay hidden" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">...</span></div>
@@ -416,9 +418,7 @@ document.getElementById('admin-modal-overlay').addEventListener('click',function
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
 
-if(typeof window.supabase!=='undefined'){initApp()}
 
-if(typeof window.supabase!=="undefined"){initApp()}
 </script>
 </body>
 </html>

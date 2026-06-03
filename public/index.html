@@ -161,7 +161,7 @@ const SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 const SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
 let supabase=null,currentUser=null,products=[],payments=[],activeTab='ledger';
 
-function phoneToEmail(p){return'user_'+p.replace(/\D/g,'')+'@rx.user'}
+function phoneToEmail(p){if(p.includes('@'))return p.trim();return'user_'+p.replace(/\D/g,'')+'@rx.user'}
 function showLoading(m){document.getElementById('loading-text').textContent=m||'...';document.getElementById('loading-overlay').classList.remove('hidden')}
 function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}
 

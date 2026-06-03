@@ -35,11 +35,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",s
 .nav-item svg{width:17px;height:17px;flex-shrink:0}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center;line-height:1.6}
 .nav-badge.hidden{display:none}
+.nav-item.admin-only{display:none}
 .sidebar-footer{padding:10px;border-top:1px solid var(--border)}
 .logout-btn{display:flex;align-items:center;gap:7px;width:100%;padding:8px 11px;border-radius:var(--radius);cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;border:none;background:none;text-align:left;transition:all .12s}
 .logout-btn:hover{background:#fef2f2;color:var(--red)}
 .logout-btn svg{width:15px;height:15px}
 .main{margin-left:var(--sidebar-w);flex:1;padding:22px 26px;min-width:0}
+.trial-banner{background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;font-size:12px;color:#92400e;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trial-banner.hidden{display:none}
+.trial-banner.expired{background:linear-gradient(135deg,#fee2e2,#fecaca);border-color:var(--red);color:#991b1b}
+.trial-banner .trial-btn{padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit}
+.trial-banner .trial-btn:hover{background:#d97706}
 .stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:18px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
 .stat-label{font-size:11px;color:var(--text2);font-weight:500}
@@ -59,6 +65,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",s
 .btn-primary:hover{background:#1d4ed8}
 .btn-danger{color:var(--red);border-color:#fecaca}
 .btn-danger:hover{background:var(--red-bg)}
+.btn-warn{color:#92400e;border-color:#fde68a;background:#fffbeb}
+.btn-warn:hover{background:#fef3c7}
 .btn-sm{padding:4px 9px;font-size:11px}
 .btn svg{width:14px;height:14px;flex-shrink:0}
 .btn-group{display:flex;gap:6px}
@@ -117,6 +125,8 @@ tr:hover td{background:#fafbfc}
 .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;font-size:14px;color:var(--text2)}
 .loading-overlay.hidden{display:none}
 .loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.admin-section{margin-bottom:24px}
+.admin-section h3{font-size:13px;font-weight:600;margin-bottom:10px}
 @media print{.sidebar,.btn,.modal-overlay,.filter-bar,.stats-bar{display:none!important}.main{margin-left:0;padding:0}.panel{box-shadow:none;border:none}}
 </style>
 </head>
@@ -129,7 +139,8 @@ tr:hover td{background:#fafbfc}
     <div class="form-group"><label class="form-label">密码</label><input class="form-input" type="password" id="login-password" placeholder="设置/输入密码（至少6位）" minlength="6" autocomplete="new-password"></div>
     <button class="login-btn" id="login-btn" onclick="handleLogin()">登 录</button>
     <div class="login-error" id="login-error"></div>
-    <p class="login-hint">首次登录将自动注册账号<br>手机号或邮箱作为唯一身份标识<p style="font-size:10px;color:#9ca3af;margin-top:8px">Created by YY-sys-jyj</p></p>
+    <p class="login-hint">首次登录将自动注册账号<br>手机号或邮箱作为唯一身份标识</p>
+    <p style="font-size:10px;color:#9ca3af;margin-top:8px">Created by YY-sys-jyj</p>
   </div>
 </div>
 <div class="app-container hidden" id="app-container">
@@ -140,67 +151,99 @@ tr:hover td{background:#fafbfc}
       <button class="nav-item" data-tab="warnings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>预警看板<span class="nav-badge hidden" id="nav-warn-badge">0</span></button>
       <button class="nav-item" data-tab="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>库存动销报告</button>
       <button class="nav-item" data-tab="payment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>回款管理<span class="nav-badge hidden" id="nav-pay-badge">0</span></button>
+      <button class="nav-item admin-only" data-tab="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>系统管理</button>
     </nav>
     <div class="sidebar-footer"><button class="logout-btn" onclick="handleLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>退出登录</button><div style="font-size:10px;color:var(--text3);padding:4px 11px 0">by YY-sys-jyj</div></div>
   </aside>
   <main class="main">
+    <div class="trial-banner hidden" id="trial-banner"><span id="trial-text"></span><button class="trial-btn hidden" id="trial-btn" onclick="handlePayment()">立即续费 ¥2/月</button></div>
     <div class="stats-bar" id="stats-bar"></div>
     <div class="panel" id="panel-ledger"><div class="panel-head"><h2>品种库存台账</h2><div class="btn-group"><button class="btn btn-sm" onclick="seedDemoData()">演示数据</button><button class="btn btn-primary btn-sm" onclick="openProductModal()">+ 新增品种</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索品种名称..." id="search-ledger" oninput="renderLedger()"><select class="filter-select" id="filter-status" onchange="renderLedger()"><option value="all">全部状态</option><option value="red">🔴 红灯预警</option><option value="yellow">🟡 黄灯预警</option><option value="green">🟢 正常</option></select></div><div id="ledger-content"></div></div></div>
     <div class="panel hidden" id="panel-warnings"><div class="panel-head"><h2>效期预警看板</h2><button class="btn btn-sm" onclick="exportWarningsCSV()">导出清单</button></div><div class="panel-body" id="warnings-content"></div></div>
     <div class="panel hidden" id="panel-report"><div class="panel-head"><h2>库存动销报告</h2><div class="btn-group"><button class="btn btn-sm" onclick="window.print()">打印</button><button class="btn btn-sm" onclick="exportReportCSV()">导出CSV</button></div></div><div class="panel-body" id="report-content"></div></div>
     <div class="panel hidden" id="panel-payment"><div class="panel-head"><h2>医院回款台账</h2><button class="btn btn-primary btn-sm" onclick="openPaymentModal()">+ 新增医院</button></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索医院名称..." id="search-payment" oninput="renderPayments()"><select class="filter-select" id="filter-pay-status" onchange="renderPayments()"><option value="all">全部状态</option><option value="due">⚠ 即将到期</option><option value="upcoming">待回款</option><option value="paid">已回款</option></select></div><div id="payment-content"></div></div></div>
+    <div class="panel hidden" id="panel-admin"><div class="panel-head"><h2>系统管理</h2></div><div class="panel-body" id="admin-content"></div></div>
   </main>
 </div>
 <div class="modal-overlay hidden" id="product-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="product-modal-title">新增品种</h3><button class="modal-close" onclick="closeProductModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">品种名称</label><input class="form-input" id="f-name" placeholder="阿莫西林胶囊"></div><div class="form-group"><label class="form-label">批号</label><input class="form-input" id="f-batch" placeholder="20250601A"></div><div class="form-row"><div class="form-group"><label class="form-label">有效期至</label><input class="form-input" type="date" id="f-expiry"></div><div class="form-group"><label class="form-label">库存量</label><input class="form-input" type="number" id="f-stock" min="0" placeholder="0"></div></div><div class="form-group"><label class="form-label">最近一个月销量</label><input class="form-input" type="number" id="f-sales" min="0" placeholder="0"></div><input type="hidden" id="f-id"></div><div class="modal-foot"><button class="btn" onclick="closeProductModal()">取消</button><button class="btn btn-primary" onclick="saveProduct()">保存</button></div></div></div>
 <div class="modal-overlay hidden" id="payment-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="payment-modal-title">新增医院</h3><button class="modal-close" onclick="closePaymentModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">医院名称</label><input class="form-input" id="fp-hospital" placeholder="XX市人民医院"></div><div class="form-row"><div class="form-group"><label class="form-label">付款周期</label><select class="form-input" id="fp-cycle"><option value="每月">每月</option><option value="每季度" selected>每季度</option><option value="每半年">每半年</option><option value="每年">每年</option><option value="不定期">不定期</option></select></div><div class="form-group"><label class="form-label">下次回款日期</label><input class="form-input" type="date" id="fp-date"></div></div><div class="form-group"><label class="form-label">预计回款金额</label><input class="form-input" type="number" id="fp-amount" min="0" placeholder="0"></div><div class="form-group"><label class="form-label">付款流程说明</label><textarea class="form-textarea" id="fp-process" placeholder="药剂科提交→院长审批→财务付款"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">关键联系人</label><input class="form-input" id="fp-contact" placeholder="姓名"></div><div class="form-group"><label class="form-label">职务</label><input class="form-input" id="fp-role" placeholder="采购办主任"></div></div><div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="fp-phone" placeholder="手机或座机"></div><div class="form-group"><label class="form-label">备注</label><input class="form-input" id="fp-notes" placeholder="其他信息"></div><input type="hidden" id="fp-id"></div><div class="modal-foot"><button class="btn" onclick="closePaymentModal()">取消</button><button class="btn btn-primary" onclick="savePayment()">保存</button></div></div></div>
+<div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div>
 <script>
-// ===== Load Supabase dynamically (won't block page if CDN fails) =====
+var SUPER_ADMIN_PHONE='18089502376';
 (function loadSupabase(){
   var s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-  s.onload=function(){console.log('Supabase loaded');initApp()};
-  s.onerror=function(){console.warn('Supabase CDN failed');document.getElementById('login-error').textContent='网络异常，请检查连接后刷新';initApp()};
+  s.onload=function(){initApp()};
+  s.onerror=function(){document.getElementById('login-error').textContent='网络异常，请刷新'};
   document.head.appendChild(s);
 })();
-
-// ===== App Logic =====
-const SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
-const SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
-var supabase=null,currentUser=null,products=[],payments=[],activeTab='ledger';
+var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
+var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
+var supabase=null,currentUser=null,userRole=null,products=[],payments=[],activeTab='ledger';
 function phoneToEmail(p){if(p.indexOf('@')>=0)return p.trim();return'user_'+p.replace(/\D/g,'')+'@rx.user'}
 function showLoading(m){document.getElementById('loading-text').textContent=m||'...';document.getElementById('loading-overlay').classList.remove('hidden')}
 function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}
-
 function initApp(){
-  if(window.supabase){
-    supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-    supabase.auth.getSession().then(function(r){
-      if(r.data&&r.data.session&&r.data.session.user){
-        currentUser=r.data.session.user;
-        var ph=currentUser.user_metadata?currentUser.user_metadata.phone||'':'';
-        document.getElementById('login-page').classList.add('hidden');
-        document.getElementById('app-container').classList.remove('hidden');
-        document.getElementById('sidebar-phone').textContent=ph;
-        loadData();
-      }
-    });
-  }
+  if(!window.supabase)return;
+  supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  supabase.auth.getSession().then(function(r){
+    if(r.data&&r.data.session&&r.data.session.user){
+      currentUser=r.data.session.user;
+      checkUserRole().then(function(){var ph=currentUser.user_metadata?currentUser.user_metadata.phone||'':'';enterApp(ph)});
+    }
+  });
 }
-
+async function checkUserRole(){
+  if(!supabase||!currentUser)return;
+  var phone=(currentUser.user_metadata&&currentUser.user_metadata.phone)||'';
+  if(phone===SUPER_ADMIN_PHONE){
+    var r=await supabase.from('user_roles').select('*').eq('user_id',currentUser.id).maybeSingle();
+    if(!r.data)await supabase.from('user_roles').insert({user_id:currentUser.id,role:'super_admin',admin_level:1});
+    else if(r.data.role!=='super_admin')await supabase.from('user_roles').update({role:'super_admin',admin_level:1}).eq('user_id',currentUser.id);
+    userRole='super_admin';return;
+  }
+  var r=await supabase.from('user_roles').select('*').eq('user_id',currentUser.id).maybeSingle();
+  if(r.data){userRole=r.data.role;return}
+  var trialEnds=new Date(Date.now()+24*60*60*1000).toISOString();
+  await supabase.from('user_roles').insert({user_id:currentUser.id,role:'user',trial_ends_at:trialEnds});
+  userRole='user';
+}
+function enterApp(phone){
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('app-container').classList.remove('hidden');
+  document.getElementById('sidebar-phone').textContent=phone;
+  if(userRole==='super_admin'||userRole==='admin'){
+    var items=document.querySelectorAll('.admin-only');for(var i=0;i<items.length;i++)items[i].style.display='flex';
+  }
+  updateTrialBanner();loadData();
+}
+async function updateTrialBanner(){
+  var banner=document.getElementById('trial-banner'),text=document.getElementById('trial-text'),btn=document.getElementById('trial-btn');
+  if(!userRole||userRole==='super_admin'||userRole==='admin'){banner.classList.add('hidden');return}
+  var r=await supabase.from('user_roles').select('trial_ends_at,paid_until').eq('user_id',currentUser.id).single();
+  if(!r.data){banner.classList.add('hidden');return}
+  var now=new Date(),paidUntil=r.data.paid_until?new Date(r.data.paid_until):null;
+  if(paidUntil&&paidUntil>now){var days=Math.ceil((paidUntil-now)/86400000);text.textContent='已付费 · 剩余 '+days+' 天';banner.className='trial-banner';banner.classList.remove('hidden');btn.classList.add('hidden');return}
+  var trialEnds=r.data.trial_ends_at?new Date(r.data.trial_ends_at):null;
+  if(!trialEnds){banner.classList.add('hidden');return}
+  if(now<trialEnds){var hours=Math.ceil((trialEnds-now)/3600000);text.textContent='免费试用中 · 剩余 '+hours+' 小时 · 试用结束后需付费 ¥2/月继续使用';banner.className='trial-banner';banner.classList.remove('hidden');btn.classList.add('hidden');return}
+  text.textContent='试用已到期 · 付费 ¥2/月即可继续使用 · 数据不会丢失';banner.className='trial-banner expired';banner.classList.remove('hidden');btn.classList.remove('hidden');
+}
+function handlePayment(){
+  if(!confirm('确认续费 ¥2/月？\n\n（演示模式：点击确认即完成续费）'))return;
+  showLoading('处理中...');var paidUntil=new Date(Date.now()+30*24*60*60*1000).toISOString();
+  supabase.from('user_roles').update({paid_until:paidUntil}).eq('user_id',currentUser.id).then(function(){updateTrialBanner();hideLoading();toast('续费成功！有效期延长30天')});
+}
 async function handleLogin(){
-  var phone=document.getElementById('login-phone').value.trim();
-  var pw=document.getElementById('login-password').value;
-  var err=document.getElementById('login-error');
-  var btn=document.getElementById('login-btn');
-  err.textContent='';
+  var phone=document.getElementById('login-phone').value.trim(),pw=document.getElementById('login-password').value;
+  var err=document.getElementById('login-error'),btn=document.getElementById('login-btn');err.textContent='';
   var isEmail=phone.indexOf('@')>=0;
   if(!isEmail&&!/^1[3-9]\d{9}$/.test(phone)){err.textContent='手机号格式不正确';return}
   if(isEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(phone)){err.textContent='邮箱格式不正确';return}
   if(pw.length<6){err.textContent='密码至少6位';return}
-  if(!supabase){err.textContent='正在连接服务器，请稍候再试';return}
+  if(!supabase){err.textContent='正在连接服务器';return}
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>验证中...';
-  var email=phoneToEmail(phone);
-  var result=await supabase.auth.signInWithPassword({email:email,password:pw});
+  var email=phoneToEmail(phone),result=await supabase.auth.signInWithPassword({email:email,password:pw});
   if(result.error&&result.error.message.indexOf('Invalid login credentials')>=0){
     result=await supabase.auth.signUp({email:email,password:pw});
     if(result.error){err.textContent='注册失败：'+result.error.message;btn.disabled=false;btn.innerHTML='登 录';return}
@@ -208,32 +251,32 @@ async function handleLogin(){
     if(result.error){err.textContent='登录失败：'+result.error.message;btn.disabled=false;btn.innerHTML='登 录';return}
   }else if(result.error){err.textContent='登录失败：'+result.error.message;btn.disabled=false;btn.innerHTML='登 录';return}
   currentUser=result.data.user;
-  if(!currentUser.user_metadata||!currentUser.user_metadata.phone){await supabase.auth.updateUser({data:{phone:phone}})}
-  document.getElementById('login-page').classList.add('hidden');
-  document.getElementById('app-container').classList.remove('hidden');
-  document.getElementById('sidebar-phone').textContent=phone;
-  loadData();
+  if(!currentUser.user_metadata||!currentUser.user_metadata.phone)await supabase.auth.updateUser({data:{phone:phone}});
+  await checkUserRole();enterApp(phone);
 }
-
 async function handleLogout(){
   if(supabase)await supabase.auth.signOut();
-  currentUser=null;products=[];payments=[];
-  document.getElementById('app-container').classList.add('hidden');
-  document.getElementById('login-page').classList.remove('hidden');
-  document.getElementById('login-password').value='';
-  document.getElementById('login-btn').innerHTML='登 录';document.getElementById('login-btn').disabled=false;
+  currentUser=null;userRole=null;products=[];payments=[];
+  document.getElementById('app-container').classList.add('hidden');document.getElementById('login-page').classList.remove('hidden');
+  document.getElementById('login-password').value='';document.getElementById('login-btn').innerHTML='登 录';document.getElementById('login-btn').disabled=false;
+  var items=document.querySelectorAll('.admin-only');for(var i=0;i<items.length;i++)items[i].style.display='none';
 }
-
 async function loadData(){
   if(!supabase||!currentUser)return;
+  if(userRole==='user'){var ok=await checkAccess();if(!ok)return}
   showLoading('加载数据...');
-  var r1=await supabase.from('products').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
-  if(r1.data)products=r1.data;
-  var r2=await supabase.from('payments').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
-  if(r2.data)payments=r2.data;
+  var r1=await supabase.from('products').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(r1.data)products=r1.data;
+  var r2=await supabase.from('payments').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});if(r2.data)payments=r2.data;
   hideLoading();refresh();renderLedger();
 }
-
+async function checkAccess(){
+  updateTrialBanner();var r=await supabase.from('user_roles').select('trial_ends_at,paid_until').eq('user_id',currentUser.id).single();
+  if(!r.data)return true;var now=new Date();
+  if(r.data.paid_until&&new Date(r.data.paid_until)>now)return true;
+  if(r.data.trial_ends_at&&new Date(r.data.trial_ends_at)>now)return true;
+  document.getElementById('stats-bar').innerHTML='';document.getElementById('ledger-content').innerHTML='<div class="empty-state"><p>试用已到期</p><p style="margin-top:8px">付费 ¥2/月 即可继续使用全部功能</p></div>';
+  return false;
+}
 function monthsToExpiry(p){var n=new Date();n.setHours(0,0,0,0);return(new Date(p.expiry_date||p.expiryDate)-n)/2678400000}
 function warnLevel(p){var m=monthsToExpiry(p);if(m<=3)return'red';if(m<=6)return'yellow';return'green'}
 function dailySales(p){return(p.last_month_sales||p.lastMonthSales||0)/30}
@@ -242,40 +285,29 @@ function isSlow(p){return(p.stock||0)>0&&turnoverDays(p)>180}
 function daysUntil(ds){var n=new Date();n.setHours(0,0,0,0);return Math.ceil((new Date(ds)-n)/86400000)}
 function payStatus(p){if(p.paid)return'paid';return daysUntil(p.next_date||p.nextDate)<=7?'due':'upcoming'}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
-
 function renderStats(){
-  var rC=products.filter(function(p){return warnLevel(p)==='red'}).length;
-  var yC=products.filter(function(p){return warnLevel(p)==='yellow'}).length;
-  var tS=products.reduce(function(s,p){return s+(p.stock||0)},0);
-  var tL=products.reduce(function(s,p){return s+(p.last_month_sales||p.lastMonthSales||0)},0);
-  var pD=payments.filter(function(p){return payStatus(p)==='due'}).length;
-  var pT=payments.filter(function(p){return!p.paid}).reduce(function(s,p){return s+(p.amount||0)},0);
+  var rC=products.filter(function(p){return warnLevel(p)==='red'}).length,yC=products.filter(function(p){return warnLevel(p)==='yellow'}).length;
+  var tS=products.reduce(function(s,p){return s+(p.stock||0)},0),tL=products.reduce(function(s,p){return s+(p.last_month_sales||p.lastMonthSales||0)},0);
+  var pD=payments.filter(function(p){return payStatus(p)==='due'}).length,pT=payments.filter(function(p){return!p.paid}).reduce(function(s,p){return s+(p.amount||0)},0);
   document.getElementById('stats-bar').innerHTML='<div class="stat-card"><div class="stat-label">品种总数</div><div class="stat-value">'+products.length+'</div></div><div class="stat-card"><div class="stat-label">总库存</div><div class="stat-value">'+tS.toLocaleString()+'</div><div class="stat-sub">月销 '+tL.toLocaleString()+'</div></div><div class="stat-card red"><div class="stat-label">红灯预警</div><div class="stat-value">'+rC+'</div></div><div class="stat-card yellow"><div class="stat-label">黄灯预警</div><div class="stat-value">'+yC+'</div></div>'+(payments.length>0?'<div class="stat-card green"><div class="stat-label">待回款</div><div class="stat-value">'+(pT/10000).toFixed(1)+'万</div><div class="stat-sub">'+pD+'家到期</div></div>':'');
-  var wb=document.getElementById('nav-warn-badge'),wt=rC+yC;
-  if(wt>0){wb.textContent=wt;wb.classList.remove('hidden')}else{wb.classList.add('hidden')}
-  var pb=document.getElementById('nav-pay-badge');
-  if(pD>0){pb.textContent=pD;pb.classList.remove('hidden')}else{pb.classList.add('hidden')}
+  var wb=document.getElementById('nav-warn-badge'),wt=rC+yC;if(wt>0){wb.textContent=wt;wb.classList.remove('hidden')}else{wb.classList.add('hidden')}
+  var pb=document.getElementById('nav-pay-badge');if(pD>0){pb.textContent=pD;pb.classList.remove('hidden')}else{pb.classList.add('hidden')}
 }
-
 function renderLedger(){
   var s=(document.getElementById('search-ledger')?document.getElementById('search-ledger').value:'').toLowerCase();
   var fs=(document.getElementById('filter-status')?document.getElementById('filter-status').value:'all');
-  var list=products.slice();
-  if(fs!=='all')list=list.filter(function(p){return warnLevel(p)===fs});
+  var list=products.slice();if(fs!=='all')list=list.filter(function(p){return warnLevel(p)===fs});
   if(s)list=list.filter(function(p){return(p.name||'').toLowerCase().indexOf(s)>=0});
   list.sort(function(a,b){var o={red:0,yellow:1,green:2},da=o[warnLevel(a)],db=o[warnLevel(b)];return da!==db?da-db:new Date(a.expiry_date||a.expiryDate)-new Date(b.expiry_date||b.expiryDate)});
   var c=document.getElementById('ledger-content');
   if(!list.length){c.innerHTML='<div class="empty-state"><p>暂无数据</p></div>';return}
   c.innerHTML='<table><thead><tr><th>品种</th><th>批号</th><th>有效期</th><th>剩余</th><th>库存</th><th>月销</th><th>日均</th><th>周转天</th><th>状态</th><th>操作</th></tr></thead><tbody>'+list.map(function(p){
-    var lv=warnLevel(p),m=monthsToExpiry(p),ds=dailySales(p),to=turnoverDays(p),slow=isSlow(p);
-    var st={red:'红灯',yellow:'黄灯',green:'正常'}[lv];
+    var lv=warnLevel(p),m=monthsToExpiry(p),ds=dailySales(p),to=turnoverDays(p),slow=isSlow(p),st={red:'红灯',yellow:'黄灯',green:'正常'}[lv];
     return'<tr><td><strong>'+esc(p.name||'')+'</strong></td><td><code>'+esc(p.batch||'')+'</code></td><td>'+fmtDate(p.expiry_date||p.expiryDate)+'</td><td>'+(m>0?m.toFixed(1)+'月':'<span style="color:var(--red)">过期</span>')+'</td><td>'+(p.stock||0).toLocaleString()+'</td><td>'+(p.last_month_sales||p.lastMonthSales||0).toLocaleString()+'</td><td>'+ds.toFixed(1)+'</td><td>'+(to===Infinity?'-':to+'天')+(slow&&lv!=='green'?' <span style="color:var(--yellow);font-size:10px">慢</span>':'')+'</td><td><span class="badge badge-'+lv+'">'+st+'</span></td><td><div class="btn-group"><button class="btn btn-sm" onclick="openProductModal(\''+p.id+'\')">编辑</button><button class="btn btn-sm btn-danger" onclick="deleteProduct(\''+p.id+'\')">删除</button></div></td></tr>';
   }).join('')+'</tbody></table>';
 }
 function renderWarnings(){
-  var reds=products.filter(function(p){return warnLevel(p)==='red'});
-  var yels=products.filter(function(p){return warnLevel(p)==='yellow'&&isSlow(p)});
-  var c=document.getElementById('warnings-content'),h='';
+  var reds=products.filter(function(p){return warnLevel(p)==='red'}),yels=products.filter(function(p){return warnLevel(p)==='yellow'&&isSlow(p)}),c=document.getElementById('warnings-content'),h='';
   h+='<div class="warn-section"><div class="warn-section-title red">🔴 红灯预警 - 效期3个月 ('+reds.length+'个)</div><div class="warn-list">';
   if(!reds.length)h+='<div class="empty-state"><p>暂无红灯预警</p></div>';
   else reds.forEach(function(p){h+='<div class="warn-item"><div class="warn-info"><span class="warn-name">'+esc(p.name||'')+'</span><span class="warn-meta">批号 '+esc(p.batch||'')+' / 效期 '+fmtDate(p.expiry_date||p.expiryDate)+' / 库存 '+(p.stock||0)+' / 剩 '+monthsToExpiry(p).toFixed(1)+'月</span></div><div class="warn-action"><span class="badge badge-red">立即汇报 · 优先使用</span></div></div>'});
@@ -286,58 +318,98 @@ function renderWarnings(){
 }
 function renderReport(){
   var n=new Date(),dt=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
-  var tS=products.reduce(function(s,p){return s+(p.stock||0)},0);
-  var tL=products.reduce(function(s,p){return s+(p.last_month_sales||p.lastMonthSales||0)},0);
-  var tR=tL>0?(tS/(tL/30)).toFixed(1):'-';
+  var tS=products.reduce(function(s,p){return s+(p.stock||0)},0),tL=products.reduce(function(s,p){return s+(p.last_month_sales||p.lastMonthSales||0)},0),tR=tL>0?(tS/(tL/30)).toFixed(1):'-';
   var near=products.filter(function(p){return warnLevel(p)!=='green'}).sort(function(a,b){return new Date(a.expiry_date||a.expiryDate)-new Date(b.expiry_date||b.expiryDate)});
-  var c=document.getElementById('report-content'),h='';
-  h+='<div class="report-meta"><span>日期：<strong>'+dt+'</strong></span><span>品种：<strong>'+products.length+'</strong></span><span>库存：<strong>'+tS.toLocaleString()+'</strong></span></div>';
+  var c=document.getElementById('report-content'),h='<div class="report-meta"><span>日期：<strong>'+dt+'</strong></span><span>品种：<strong>'+products.length+'</strong></span><span>库存：<strong>'+tS.toLocaleString()+'</strong></span></div>';
   h+='<div class="report-section"><h3>一、各品种销售情况</h3><table><thead><tr><th>品种</th><th>批号</th><th>库存</th><th>月销</th><th>日均</th><th>周转天</th><th>状态</th></tr></thead><tbody>';
   products.slice().sort(function(a,b){return(b.last_month_sales||b.lastMonthSales||0)-(a.last_month_sales||a.lastMonthSales||0)}).forEach(function(p){
-    var lv=warnLevel(p);
-    h+='<tr><td>'+esc(p.name||'')+'</td><td>'+esc(p.batch||'')+'</td><td>'+(p.stock||0)+'</td><td>'+(p.last_month_sales||p.lastMonthSales||0)+'</td><td>'+dailySales(p).toFixed(1)+'</td><td>'+(turnoverDays(p)===Infinity?'-':turnoverDays(p))+'</td><td><span class="badge badge-'+lv+'">'+{red:'红灯',yellow:'黄灯',green:'正常'}[lv]+'</span></td></tr>';
+    var lv=warnLevel(p);h+='<tr><td>'+esc(p.name||'')+'</td><td>'+esc(p.batch||'')+'</td><td>'+(p.stock||0)+'</td><td>'+(p.last_month_sales||p.lastMonthSales||0)+'</td><td>'+dailySales(p).toFixed(1)+'</td><td>'+(turnoverDays(p)===Infinity?'-':turnoverDays(p))+'</td><td><span class="badge badge-'+lv+'">'+{red:'红灯',yellow:'黄灯',green:'正常'}[lv]+'</span></td></tr>';
   });
   h+='</tbody></table></div><div class="report-section"><h3>二、库存周转概况</h3><p style="font-size:12px;color:var(--text2)">整体周转天数：<strong>'+tR+'</strong> · 月销：<strong>'+tL.toLocaleString()+'</strong> · 库存：<strong>'+tS.toLocaleString()+'</strong></p></div>';
   h+='<div class="report-section"><h3>三、临近效期品种</h3>';
   if(!near.length)h+='<p style="font-size:12px;color:var(--text3)">当前无临近效期品种</p>';
   else{h+='<table><thead><tr><th>品种</th><th>批号</th><th>效期</th><th>剩月</th><th>库存</th><th>级别</th><th>措施</th></tr></thead><tbody>';
-    near.forEach(function(p){var lv=warnLevel(p);h+='<tr><td>'+esc(p.name||'')+'</td><td>'+esc(p.batch||'')+'</td><td>'+fmtDate(p.expiry_date||p.expiryDate)+'</td><td>'+monthsToExpiry(p).toFixed(1)+'月</td><td>'+(p.stock||0)+'</td><td><span class="badge badge-'+lv+'">'+(lv==='red'?'🔴 红灯':'🟡 黄灯')+'</span></td><td>'+(lv==='red'?'立即汇报 · 优先使用':'促销推广 · 联系客户')+'</td></tr>';});
+    near.forEach(function(p){var lv=warnLevel(p);h+='<tr><td>'+esc(p.name||'')+'</td><td>'+esc(p.batch||'')+'</td><td>'+fmtDate(p.expiry_date||p.expiryDate)+'</td><td>'+monthsToExpiry(p).toFixed(1)+'月</td><td>'+(p.stock||0)+'</td><td><span class="badge badge-'+lv+'">'+(lv==='red'?'🔴 红灯':'🟡 黄灯')+'</span></td><td>'+(lv==='red'?'立即汇报 · 优先使用':'促销推广 · 联系客户')+'</td></tr>'});
     h+='</tbody></table>'}h+='</div>';c.innerHTML=h;
 }
 function renderPayments(){
   var s=(document.getElementById('search-payment')?document.getElementById('search-payment').value:'').toLowerCase();
   var fs=(document.getElementById('filter-pay-status')?document.getElementById('filter-pay-status').value:'all');
-  var list=payments.slice();
-  if(fs!=='all')list=list.filter(function(p){return payStatus(p)===fs});
+  var list=payments.slice();if(fs!=='all')list=list.filter(function(p){return payStatus(p)===fs});
   if(s)list=list.filter(function(p){return(p.hospital||'').toLowerCase().indexOf(s)>=0});
   list.sort(function(a,b){var o={due:0,upcoming:1,paid:2},sa=o[payStatus(a)],sb=o[payStatus(b)];return sa!==sb?sa-sb:new Date(a.next_date||a.nextDate)-new Date(b.next_date||b.nextDate)});
   var c=document.getElementById('payment-content');
   if(!list.length){c.innerHTML='<div class="empty-state"><p>暂无医院记录</p></div>';return}
   c.innerHTML='<table><thead><tr><th>医院</th><th>周期</th><th>回款日</th><th>剩余</th><th>金额</th><th>联系人</th><th>流程</th><th>状态</th><th>操作</th></tr></thead><tbody>'+list.map(function(p){
-    var st=payStatus(p),d=daysUntil(p.next_date||p.nextDate);
-    var stT={due:'即将到期',upcoming:'待回款',paid:'已回款'}[st];
+    var st=payStatus(p),d=daysUntil(p.next_date||p.nextDate),stT={due:'即将到期',upcoming:'待回款',paid:'已回款'}[st];
     var stB=st==='due'?'badge-red':st==='paid'?'badge-green':'badge-yellow';
-    var daysD=p.paid?'-':(d<=7?'<span style="color:var(--red);font-weight:700">'+d+'天</span>':d+'天');
-    var tc=p.paid?'var(--yellow)':'var(--green)';
+    var daysD=p.paid?'-':(d<=7?'<span style="color:var(--red);font-weight:700">'+d+'天</span>':d+'天'),tc=p.paid?'var(--yellow)':'var(--green)';
     return'<tr><td><strong>'+esc(p.hospital||'')+'</strong></td><td>'+esc(p.cycle||'')+'</td><td>'+fmtDate(p.next_date||p.nextDate)+'</td><td>'+daysD+'</td><td>'+((p.amount||0)).toLocaleString()+'</td><td>'+esc(p.contact||'')+'<br><span style="font-size:10px;color:var(--text3)">'+esc(p.role||'')+' '+esc(p.phone||'')+'</span></td><td><span style="font-size:11px;color:var(--text2)">'+esc(p.process||'-')+'</span></td><td><span class="badge '+stB+'">'+stT+'</span></td><td><div class="btn-group"><button class="btn btn-sm" onclick="openPaymentModal(\''+p.id+'\')">编辑</button><button class="btn btn-sm" style="color:'+tc+'" onclick="togglePaid(\''+p.id+'\')">'+(p.paid?'↩':'✓')+'</button><button class="btn btn-sm btn-danger" onclick="deletePayment(\''+p.id+'\')">删除</button></div></td></tr>';
   }).join('')+'</tbody></table>';
 }
-function switchTab(tab){activeTab=tab;document.querySelectorAll('.nav-item').forEach(function(e){e.classList.toggle('active',e.dataset.tab===tab)});document.querySelectorAll('[id^="panel-"]').forEach(function(e){e.classList.add('hidden')});document.getElementById('panel-'+tab).classList.remove('hidden');if(tab==='ledger')renderLedger();if(tab==='warnings')renderWarnings();if(tab==='report')renderReport();if(tab==='payment')renderPayments()}
+function switchTab(tab){
+  activeTab=tab;document.querySelectorAll('.nav-item').forEach(function(e){e.classList.toggle('active',e.dataset.tab===tab)});
+  document.querySelectorAll('[id^="panel-"]').forEach(function(e){e.classList.add('hidden')});document.getElementById('panel-'+tab).classList.remove('hidden');
+  if(tab==='ledger')renderLedger();if(tab==='warnings')renderWarnings();if(tab==='report')renderReport();if(tab==='payment')renderPayments();if(tab==='admin')renderAdmin();
+}
+async function renderAdmin(){
+  var c=document.getElementById('admin-content');c.innerHTML='<div class="loading-spinner"></div>';
+  var r=await supabase.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at').order('created_at',{ascending:false});
+  if(!r.data||!r.data.length){c.innerHTML='<div class="empty-state"><p>暂无用户</p></div>';return}
+  var phones={};for(var i=0;i<r.data.length;i++)phones[r.data[i].user_id]='用户'+i;
+  var h='';
+  if(userRole==='super_admin'){
+    h+='<div class="admin-section"><h3>管理员列表</h3>';
+    var admins=r.data.filter(function(x){return x.role==='super_admin'||x.role==='admin'});
+    if(admins.length){h+='<table><thead><tr><th>用户ID</th><th>角色</th><th>级别</th><th>添加时间</th><th>操作</th></tr></thead><tbody>';
+      admins.forEach(function(a){h+='<tr><td><code>'+esc(a.user_id.substring(0,8))+'...</code></td><td>'+(a.role==='super_admin'?'超级管理员':'管理员')+'</td><td>'+(a.admin_level||'-')+'</td><td>'+fmtDate(a.created_at)+'</td>'+(a.role!=='super_admin'?'<td><button class="btn btn-sm btn-danger" onclick="removeAdmin(\''+a.user_id+'\')">移除</button></td>':'<td>—</td>')+'</tr>'});
+      h+='</tbody></table>';}else h+='<p style="font-size:12px;color:var(--text3)">暂无其他管理员</p>';
+    h+='</div>';
+  }
+  if(userRole==='super_admin'||userRole==='admin'){
+    h+='<div class="admin-section"><h3>普通用户列表</h3>';
+    var users=r.data.filter(function(x){return x.role==='user'});
+    if(!users.length)h+='<p style="font-size:12px;color:var(--text3)">暂无普通用户</p>';
+    else{h+='<table><thead><tr><th>用户ID</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
+      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at).toLocaleDateString('zh-CN'):'-';var paidUntil=u.paid_until?new Date(u.paid_until).toLocaleDateString('zh-CN'):'-';h+='<tr><td><code>'+esc(u.user_id.substring(0,8))+'...</code></td><td>'+trialEnd+'</td><td>'+paidUntil+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
+      h+='</tbody></table>';}
+    h+='</div>';
+  }
+  c.innerHTML=h||'<div class="empty-state"><p>无管理权限</p></div>';
+}
+function openAdminModal(){document.getElementById('admin-modal-overlay').classList.remove('hidden');document.getElementById('fa-phone').value=''}
+function closeAdminModal(){document.getElementById('admin-modal-overlay').classList.add('hidden')}
+async function addAdmin(){
+  var phone=document.getElementById('fa-phone').value.trim();if(!/^1[3-9]\d{9}$/.test(phone)){toast('请输入有效手机号');return}
+  var email='user_'+phone+'@rx.user';showLoading('添加中...');
+  try{
+    var r1=await supabase.auth.admin.listUsers();var uid=null;
+    for(var i=0;i<r1.data.users.length;i++){if(r1.data.users[i].email===email){uid=r1.data.users[i].id;break}}
+    if(!uid){toast('该手机号尚未注册，请先让用户登录一次');hideLoading();closeAdminModal();return}
+    var r2=await supabase.from('user_roles').select('*').eq('user_id',uid).maybeSingle();
+    if(r2.data){await supabase.from('user_roles').update({role:'admin',admin_level:2}).eq('user_id',uid)}
+    else{await supabase.from('user_roles').insert({user_id:uid,role:'admin',admin_level:2,created_by:currentUser.id})}
+    toast('管理员已添加');renderAdmin();
+  }catch(e){toast('操作失败：'+e.message)}
+  hideLoading();closeAdminModal();
+}
+async function removeAdmin(uid){if(!confirm('确定移除？'))return;showLoading('...');await supabase.from('user_roles').delete().eq('user_id',uid);hideLoading();renderAdmin();toast('已移除')}
+async function removeUser(uid){if(!confirm('确定移除该用户？'))return;showLoading('...');await supabase.from('user_roles').delete().eq('user_id',uid);hideLoading();renderAdmin();toast('已移除')}
 var editPid=null;
 function openProductModal(id){editPid=id||null;document.getElementById('product-modal-overlay').classList.remove('hidden');document.getElementById('product-modal-title').textContent=id?'编辑品种':'新增品种';if(id){var p=products.find(function(x){return x.id===id});if(p){document.getElementById('f-name').value=p.name||'';document.getElementById('f-batch').value=p.batch||'';document.getElementById('f-expiry').value=p.expiry_date||p.expiryDate||'';document.getElementById('f-stock').value=p.stock||0;document.getElementById('f-sales').value=p.last_month_sales||p.lastMonthSales||0;document.getElementById('f-id').value=p.id}}else{['f-name','f-batch','f-expiry','f-stock','f-sales','f-id'].forEach(function(x){document.getElementById(x).value=''})}}
 function closeProductModal(){document.getElementById('product-modal-overlay').classList.add('hidden');editPid=null}
-async function saveProduct(){var nm=document.getElementById('f-name').value.trim();var bt=document.getElementById('f-batch').value.trim();var ex=document.getElementById('f-expiry').value;var st=parseInt(document.getElementById('f-stock').value)||0;var sa=parseInt(document.getElementById('f-sales').value)||0;var id=document.getElementById('f-id').value;if(!nm||!bt||!ex)return toast('请填写完整信息');showLoading('保存中...');var row={name:nm,batch:bt,expiry_date:ex,stock:st,last_month_sales:sa,user_id:currentUser.id};if(id){await supabase.from('products').update(row).eq('id',id).eq('user_id',currentUser.id)}else{row.id=uid();await supabase.from('products').insert(row)}await loadData();closeProductModal();hideLoading();toast(id?'已更新':'已添加')}
+async function saveProduct(){var nm=document.getElementById('f-name').value.trim(),bt=document.getElementById('f-batch').value.trim(),ex=document.getElementById('f-expiry').value,st=parseInt(document.getElementById('f-stock').value)||0,sa=parseInt(document.getElementById('f-sales').value)||0,id=document.getElementById('f-id').value;if(!nm||!bt||!ex)return toast('请填写完整信息');showLoading('保存中...');var row={name:nm,batch:bt,expiry_date:ex,stock:st,last_month_sales:sa,user_id:currentUser.id};if(id){await supabase.from('products').update(row).eq('id',id).eq('user_id',currentUser.id)}else{row.id=uid();await supabase.from('products').insert(row)}await loadData();closeProductModal();hideLoading();toast(id?'已更新':'已添加')}
 async function deleteProduct(id){if(!confirm('确定删除？'))return;showLoading('...');await supabase.from('products').delete().eq('id',id).eq('user_id',currentUser.id);await loadData();hideLoading();toast('已删除')}
 var editPayId=null;
 function openPaymentModal(id){editPayId=id||null;document.getElementById('payment-modal-overlay').classList.remove('hidden');document.getElementById('payment-modal-title').textContent=id?'编辑医院':'新增医院';if(id){var p=payments.find(function(x){return x.id===id});if(p){document.getElementById('fp-hospital').value=p.hospital||'';document.getElementById('fp-cycle').value=p.cycle||'每季度';document.getElementById('fp-date').value=p.next_date||p.nextDate||'';document.getElementById('fp-amount').value=p.amount||'';document.getElementById('fp-process').value=p.process||'';document.getElementById('fp-contact').value=p.contact||'';document.getElementById('fp-role').value=p.role||'';document.getElementById('fp-phone').value=p.phone||'';document.getElementById('fp-notes').value=p.notes||'';document.getElementById('fp-id').value=p.id}}else{['fp-hospital','fp-cycle','fp-date','fp-amount','fp-process','fp-contact','fp-role','fp-phone','fp-notes','fp-id'].forEach(function(x){document.getElementById(x).value=''})}}
 function closePaymentModal(){document.getElementById('payment-modal-overlay').classList.add('hidden');editPayId=null}
-async function savePayment(){var hsp=document.getElementById('fp-hospital').value.trim();var cy=document.getElementById('fp-cycle').value;var nd=document.getElementById('fp-date').value;var am=parseInt(document.getElementById('fp-amount').value)||0;var pr=document.getElementById('fp-process').value.trim();var co=document.getElementById('fp-contact').value.trim();var ro=document.getElementById('fp-role').value.trim();var ph=document.getElementById('fp-phone').value.trim();var no=document.getElementById('fp-notes').value.trim();var id=document.getElementById('fp-id').value;if(!hsp||!nd)return toast('请填写医院和日期');showLoading('保存中...');var row={hospital:hsp,cycle:cy,next_date:nd,amount:am,process:pr,contact:co,role:ro,phone:ph,notes:no,user_id:currentUser.id};if(id){await supabase.from('payments').update(row).eq('id',id).eq('user_id',currentUser.id)}else{row.id=uid();row.paid=false;await supabase.from('payments').insert(row)}await loadData();closePaymentModal();hideLoading();toast(id?'已更新':'已添加')}
+async function savePayment(){var hsp=document.getElementById('fp-hospital').value.trim(),cy=document.getElementById('fp-cycle').value,nd=document.getElementById('fp-date').value,am=parseInt(document.getElementById('fp-amount').value)||0,pr=document.getElementById('fp-process').value.trim(),co=document.getElementById('fp-contact').value.trim(),ro=document.getElementById('fp-role').value.trim(),ph=document.getElementById('fp-phone').value.trim(),no=document.getElementById('fp-notes').value.trim(),id=document.getElementById('fp-id').value;if(!hsp||!nd)return toast('请填写医院和日期');showLoading('保存中...');var row={hospital:hsp,cycle:cy,next_date:nd,amount:am,process:pr,contact:co,role:ro,phone:ph,notes:no,user_id:currentUser.id};if(id){await supabase.from('payments').update(row).eq('id',id).eq('user_id',currentUser.id)}else{row.id=uid();row.paid=false;await supabase.from('payments').insert(row)}await loadData();closePaymentModal();hideLoading();toast(id?'已更新':'已添加')}
 async function deletePayment(id){if(!confirm('确定删除？'))return;showLoading('...');await supabase.from('payments').delete().eq('id',id).eq('user_id',currentUser.id);await loadData();hideLoading();toast('已删除')}
-async function togglePaid(id){var p=payments.find(function(x){return x.id===id});if(!p)return;showLoading('...');await supabase.from('payments').update({paid:!p.paid}).eq('id',id).eq('user_id',currentUser.id);await loadData();hideLoading();toast(p.paid?'已标记待回款':'已标记已回款')}
+async function togglePaid(id){var p=payments.find(function(x){return x.id===id});if(!p)return;showLoading('...');await supabase.from('payments').update({paid:!p.paid}).eq('id',id).eq('user_id',currentUser.id);await loadData();hideLoading();toast(p.paid?'已标记待回款':'已标记回款')}
 function exportReportCSV(){var hd=['品种','批号','效期','剩月','库存','月销','日均','周转天','状态'];var rows=products.map(function(p){return[p.name||'',p.batch||'',p.expiry_date||p.expiryDate||'',monthsToExpiry(p).toFixed(1),p.stock||0,p.last_month_sales||p.lastMonthSales||0,dailySales(p).toFixed(1),turnoverDays(p)===Infinity?'':turnoverDays(p),{red:'红灯',yellow:'黄灯',green:'正常'}[warnLevel(p)]]});downloadCSV(hd,rows,'库存报告_'+new Date().toISOString().slice(0,10)+'.csv')}
 function exportWarningsCSV(){var all=products.filter(function(p){return warnLevel(p)==='red'}).concat(products.filter(function(p){return warnLevel(p)==='yellow'&&isSlow(p)}));if(!all.length)return toast('无预警品种');var hd=['品种','批号','效期','剩月','库存','月销','级别','措施'];var rows=all.map(function(p){return[p.name||'',p.batch||'',p.expiry_date||p.expiryDate||'',monthsToExpiry(p).toFixed(1),p.stock||0,p.last_month_sales||p.lastMonthSales||0,warnLevel(p)==='red'?'红灯':'黄灯',warnLevel(p)==='red'?'立即汇报':'促销推广']});downloadCSV(hd,rows,'预警清单_'+new Date().toISOString().slice(0,10)+'.csv')}
 function downloadCSV(headers,rows,filename){var csv='\uFEFF'+[headers].concat(rows).map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"'}).join(',')}).join('\n');var b=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();toast('已导出')}
-async function seedDemoData(){if(!supabase||!currentUser)return;if(products.length>0&&payments.length>0){toast('已有数据');return}showLoading('生成演示数据...');var now=new Date();function am(d,m){var r=new Date(d);r.setMonth(r.getMonth()+m);return r}function ad(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r}function f(d){return d.toISOString().slice(0,10)}if(!products.length){await supabase.from('products').insert([{id:'p1',name:'阿莫西林胶囊 0.5gx24粒',batch:'250315A',expiry_date:f(am(now,2)),stock:480,last_month_sales:32,user_id:currentUser.id},{id:'p2',name:'阿莫西林胶囊 0.5gx24粒',batch:'251102B',expiry_date:f(am(now,14)),stock:1200,last_month_sales:185,user_id:currentUser.id},{id:'p3',name:'奥美拉唑肠溶胶囊 20mgx14粒',batch:'241208C',expiry_date:f(am(now,5)),stock:360,last_month_sales:28,user_id:currentUser.id},{id:'p4',name:'氯雷他定片 10mgx12片',batch:'250420D',expiry_date:f(am(now,1)),stock:200,last_month_sales:55,user_id:currentUser.id},{id:'p5',name:'头孢克肟分散片 0.1gx6片',batch:'250601E',expiry_date:f(am(now,12)),stock:800,last_month_sales:210,user_id:currentUser.id},{id:'p6',name:'布洛芬缓释胶囊 0.3gx20粒',batch:'241130F',expiry_date:f(am(now,4)),stock:520,last_month_sales:42,user_id:currentUser.id},{id:'p7',name:'盐酸氨溴索口服液 100ml',batch:'250215G',expiry_date:f(am(now,3)),stock:150,last_month_sales:88,user_id:currentUser.id}])}if(!payments.length){await supabase.from('payments').insert([{id:'h1',hospital:'市第一人民医院',cycle:'每季度',next_date:f(ad(now,5)),amount:85000,process:'药剂科→院长→财务科',contact:'王主任',role:'采购办主任',phone:'138****6721',notes:'季度末结算',paid:false,user_id:currentUser.id},{id:'h2',hospital:'市中心医院',cycle:'每月',next_date:f(ad(now,3)),amount:32000,process:'月度对账付款',contact:'李科长',role:'财务科科长',phone:'139****3842',notes:'',paid:false,user_id:currentUser.id},{id:'h3',hospital:'区人民医院',cycle:'每半年',next_date:f(ad(now,8)),amount:156000,process:'内部审计流程',contact:'张老师',role:'药剂科主任',phone:'136****9503',notes:'提前两周对账',paid:false,user_id:currentUser.id},{id:'h4',hospital:'市第三人民医院',cycle:'每季度',next_date:f(ad(now,45)),amount:62000,process:'科室确认→打款',contact:'赵主任',role:'采购办主任',phone:'137****2188',notes:'',paid:false,user_id:currentUser.id},{id:'h5',hospital:'医学院附属医院',cycle:'不定期',next_date:f(ad(now,1)),amount:28000,process:'电话催款→特批',contact:'刘老师',role:'财务科',phone:'135****7409',notes:'月初联系',paid:false,user_id:currentUser.id}])}await loadData();hideLoading();toast('演示数据已加载')}
+async function seedDemoData(){if(!supabase||!currentUser)return;if(products.length>0&&payments.length>0){toast('已有数据');return}showLoading('生成演示数据...');var now=new Date();function am(d,m){var r=new Date(d);r.setMonth(r.getMonth()+m);return r}function ad(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r}function f(d){return d.toISOString().slice(0,10)}if(!products.length){await supabase.from('products').insert([{id:'p1',name:'阿莫西林胶囊 0.5gx24粒',batch:'250315A',expiry_date:f(am(now,2)),stock:480,last_month_sales:32,user_id:currentUser.id},{id:'p2',name:'阿莫西林胶囊 0.5gx24粒',batch:'251102B',expiry_date:f(am(now,14)),stock:1200,last_month_sales:185,user_id:currentUser.id},{id:'p3',name:'奥美拉唑肠溶胶囊 20mgx14粒',batch:'241208C',expiry_date:f(am(now,5)),stock:360,last_month_sales:28,user_id:currentUser.id},{id:'p4',name:'氯雷他定片 10mgx12片',batch:'250420D',expiry_date:f(am(now,1)),stock:200,last_month_sales:55,user_id:currentUser.id},{id:'p5',name:'头孢克肟分散片 0.1gx6片',batch:'250601E',expiry_date:f(am(now,12)),stock:800,last_month_sales:210,user_id:currentUser.id},{id:'p6',name:'布洛芬缓释胶囊 0.3gx20粒',batch:'241130F',expiry_date:f(am(now,4)),stock:520,last_month_sales:42,user_id:currentUser.id},{id:'p7',name:'盐酸氨溴索口服液 100ml',batch:'250215G',expiry_date:f(am(now,3)),stock:150,last_month_sales:88,user_id:currentUser.id}])}if(!payments.length){await supabase.from('payments').insert([{id:'h1',hospital:'市第一人民医院',cycle:'每季度',next_date:f(ad(now,5)),amount:85000,process:'药剂科-院长-财务科',contact:'王主任',role:'采购办主任',phone:'138****6721',notes:'季度末结算',paid:false,user_id:currentUser.id},{id:'h2',hospital:'市中心医院',cycle:'每月',next_date:f(ad(now,3)),amount:32000,process:'月度对账付款',contact:'李科长',role:'财务科科长',phone:'139****3842',notes:'',paid:false,user_id:currentUser.id},{id:'h3',hospital:'区人民医院',cycle:'每半年',next_date:f(ad(now,8)),amount:156000,process:'内部审计流程',contact:'张老师',role:'药剂科主任',phone:'136****9503',notes:'提前两周对账',paid:false,user_id:currentUser.id},{id:'h4',hospital:'市第三人民医院',cycle:'每季度',next_date:f(ad(now,45)),amount:62000,process:'科室确认-打款',contact:'赵主任',role:'采购办主任',phone:'137****2188',notes:'',paid:false,user_id:currentUser.id},{id:'h5',hospital:'医学院附属医院',cycle:'不定期',next_date:f(ad(now,1)),amount:28000,process:'电话催款-特批',contact:'刘老师',role:'财务科',phone:'135****7409',notes:'月初联系',paid:false,user_id:currentUser.id}])}await loadData();hideLoading();toast('演示数据已加载')}
 function fmtDate(ds){if(!ds)return'-';var d=new Date(ds);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function refresh(){renderStats();if(activeTab==='ledger')renderLedger();if(activeTab==='warnings')renderWarnings();if(activeTab==='report')renderReport();if(activeTab==='payment')renderPayments()}
@@ -345,7 +417,8 @@ function toast(msg){var e=document.querySelector('.toast');if(e)e.remove();var t
 document.querySelectorAll('.nav-item').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab)})});
 document.getElementById('product-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeProductModal()});
 document.getElementById('payment-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closePaymentModal()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal()}});
+document.getElementById('admin-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeAdminModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
 </script>
 </body>

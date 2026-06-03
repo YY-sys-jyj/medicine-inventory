@@ -129,7 +129,7 @@ tr:hover td{background:#fafbfc}
     <div class="form-group"><label class="form-label">密码</label><input class="form-input" type="password" id="login-password" placeholder="设置/输入密码（至少6位）" minlength="6" autocomplete="new-password"></div>
     <button class="login-btn" id="login-btn" onclick="handleLogin()">登 录</button>
     <div class="login-error" id="login-error"></div>
-    <p class="login-hint">首次登录将自动注册账号<br>手机号或邮箱作为唯一身份标识</p>
+    <p class="login-hint">首次登录将自动注册账号<br>手机号或邮箱作为唯一身份标识<p style="font-size:10px;color:#9ca3af;margin-top:8px">Created by YY-sys-jyj</p></p>
   </div>
 </div>
 <div class="app-container hidden" id="app-container">
@@ -141,7 +141,7 @@ tr:hover td{background:#fafbfc}
       <button class="nav-item" data-tab="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>库存动销报告</button>
       <button class="nav-item" data-tab="payment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>回款管理<span class="nav-badge hidden" id="nav-pay-badge">0</span></button>
     </nav>
-    <div class="sidebar-footer"><button class="logout-btn" onclick="handleLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>退出登录</button></div>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="handleLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>退出登录</button><div style="font-size:10px;color:var(--text3);padding:4px 11px 0">by YY-sys-jyj</div></div>
   </aside>
   <main class="main">
     <div class="stats-bar" id="stats-bar"></div>

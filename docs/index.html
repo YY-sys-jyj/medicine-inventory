@@ -132,7 +132,7 @@ tr:hover td{background:#fafbfc}
 
 </head>
 <body>
-<div class="loading-overlay hidden" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">...</span></div>
+<div class="loading-overlay" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">正在加载系统...</span></div>
 <div id="debug-status" style="position:fixed;top:0;left:0;right:0;background:#1a1d23;color:#fff;padding:4px 12px;font-size:11px;z-index:9999;font-family:monospace;text-align:center"></div>
 <div class="login-page" id="login-page">
   <div class="login-card">
@@ -194,8 +194,8 @@ function initApp(){
     if(r.data&&r.data.session&&r.data.session.user){
       currentUser=r.data.session.user;
       checkUserRole().then(function(){var ph=currentUser.user_metadata?currentUser.user_metadata.phone||'':'';enterApp(ph)});
-    }
-  });
+    }else{hideLoading();}
+  }).catch(function(e){hideLoading();});
 }
 async function checkUserRole(){
   if(!supabaseClient||!currentUser)return;

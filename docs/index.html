@@ -129,7 +129,7 @@ tr:hover td{background:#fafbfc}
 .admin-section h3{font-size:13px;font-weight:600;margin-bottom:10px}
 @media print{.sidebar,.btn,.modal-overlay,.filter-bar,.stats-bar{display:none!important}.main{margin-left:0;padding:0}.panel{box-shadow:none;border:none}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="document.getElementById('login-error').textContent='CDN加载失败，请刷新页面'"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="document.getElementById('login-error').textContent='CDN加载失败，请刷新页面';var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';document.head.appendChild(s)"></script>
 </head>
 <body>
 <div class="loading-overlay hidden" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">...</span></div>
@@ -450,7 +450,7 @@ document.getElementById('login-password').addEventListener('keydown',function(e)
 
 
 
-setTimeout(function(){var d=document.getElementById("debug-status");if(typeof window.supabase!=="undefined"){if(d)d.textContent="CDN OK - calling initApp()";initApp();setTimeout(function(){if(d)d.textContent="post-init: supabase="+(typeof supabaseClient)+" = "+(supabaseClient?"OK":"NULL");},300)}else{if(d)d.textContent="CDN FAILED - window.supabase not found";document.getElementById("login-error").textContent="CDN加载失败，请刷新"}},200)
+function startApp(){var d=document.getElementById("debug-status");if(typeof window.supabase!=="undefined"){if(d)d.textContent="CDN OK";initApp()}else{var retries=parseInt(sessionStorage.getItem('cdn_retries')||'0')+1;sessionStorage.setItem('cdn_retries',retries);if(d)d.textContent="CDN retry "+retries;if(retries<=10){setTimeout(startApp,600)}else{document.getElementById("login-error").textContent="网络加载失败，请刷新页面重试"}}}setTimeout(startApp,300)
 </script>
 </body>
 </html>

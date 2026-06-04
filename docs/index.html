@@ -256,7 +256,7 @@ async function updateTrialBanner(){
   banner.className='trial-banner expired';banner.classList.remove('hidden');btn.classList.remove('hidden');
   if(sidebarStatus){sidebarStatus.style.display='block';sidebarStatus.innerHTML='<span style="color:var(--red)">🔴 试用已到期</span><br><span style="font-size:10px">付费 ¥2/月即可继续使用<br>数据不会丢失</span>';}
 }
-var PAYMENT_QR_URL='';function handlePayment(){
+var PAYMENT_QR_URL='微信收款码.jpg';function handlePayment(){
   document.getElementById('pay-modal-overlay').classList.remove('hidden');
   var qrEl=document.getElementById('pay-qr');
   if(PAYMENT_QR_URL){qrEl.innerHTML='<img src="'+PAYMENT_QR_URL+'" style="max-width:200px;border-radius:8px" alt="收款码">'}else{qrEl.innerHTML='<div style="padding:30px;background:#f0fdf4;border-radius:8px;text-align:center;color:var(--green);font-size:13px">请管理员设置收款码图片URL<br>联系管理员：'+SUPER_ADMIN_PHONE+'</div>'}

@@ -180,7 +180,7 @@ tr:hover td{background:#fafbfc}
 
 
 
-<script src="supabase.js">
+<script src="supabase.js"></script>
 
 
 );var results=[];document.getElementById('qs-msg').textContent='处理中...';for(var i=0;i<lines.length;i++){var parts=lines[i].split(',');var name=parts[0].trim();var qty=parseInt(parts[1])||0;if(!name||qty===0){results.push(name||'? :格式错误,跳过');continue}var exist=products.find(function(p){return p.name===name});if(exist){var ns=exist.stock+qty;if(ns<0){results.push(name+' :出库失败(库存不足)');continue}await supabaseClient.from('products').update({stock:ns}).eq('id',exist.id);await supabaseClient.from('inventory_logs').insert({product_id:exist.id,product_name:name,type:qty>0?'in':'out',quantity:Math.abs(qty),stock_after:ns,note:'快速出入库',user_id:currentUser.id});results.push(name+' :'+(qty>0?'入库':'出库')+Math.abs(qty)+' → 库存'+ns)}else{var nd=new Date();nd.setFullYear(nd.getFullYear()+2);var nid=uid();var ns2=Math.max(0,qty);await supabaseClient.from('products').insert({id:nid,name:name,batch:'',expiry_date:nd.toISOString().slice(0,10),stock:ns2,last_month_sales:0,user_id:currentUser.id});await supabaseClient.from('inventory_logs').insert({product_id:nid,product_name:name,type:'in',quantity:ns2,stock_after:ns2,note:'快速出入库-新品',user_id:currentUser.id});results.push(name+' :新品入库'+ns2)}}document.getElementById('qs-msg').innerHTML='<b>完成：</b><br>'+results.join('<br>');loadData();toast('批量处理完成')}ng="zh-CN">
@@ -364,11 +364,7 @@ tr:hover td{background:#fafbfc}
 
 <div class="modal-overlay hidden" id="stmt-modal-overlay"><div class="modal" style="width:600px;max-width:95vw"><div class="modal-head"><h3>📋 医院对账单</h3><button class="modal-close" onclick="closeStmtModal()">✕</button></div><div class="modal-body" id="stmt-content" style="font-size:13px"></div><div class="modal-foot"><button class="btn" onclick="closeStmtModal()">关闭</button><button class="btn btn-primary" onclick="window.print()">🖨 打印</button></div></div></div>
 <div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">请输入绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" onclick="handleForgotPassword()">发送重置链接</button></div></div></div>
-<script src="supabase.js">
 
-
-
-</script>
 
 
 <script>

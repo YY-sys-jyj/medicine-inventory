@@ -378,7 +378,7 @@ function switchTab(tab){
 async function renderAdmin(){
 	  var c=document.getElementById('admin-content');c.innerHTML='<div class="loading-spinner"></div>';
 	  var r=await supabaseClient.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at').order('created_at',{ascending:false});
-	  if(!r.data||!r.data.length){c.innerHTML='<div class="empty-state"><p>暂无用户</p></div>';return}
+	  if(!r.data||!r.data.length){var h2='<div class="stats-bar" style="margin-bottom:18px"><div class="stat-card"><div class="stat-label">管理员数</div><div class="stat-value">1</div></div><div class="stat-card"><div class="stat-label">普通用户数</div><div class="stat-value">0</div></div><div class="stat-card"><div class="stat-label">总用户数</div><div class="stat-value">1</div></div></div>';h2+='<div class="admin-section"><h3>管理员列表（1人）</h3><table><thead><tr><th>角色</th><th>说明</th></tr></thead><tbody><tr><td><span class="badge badge-red">超级管理员</span></td><td>当前账号（手机号：'+SUPER_ADMIN_PHONE+'）</td></tr></tbody></table></div>';c.innerHTML=h2;return}
 	  var now=new Date();
 	  var admins=r.data.filter(function(x){return x.role==='super_admin'||x.role==='admin'});
 	  var users=r.data.filter(function(x){return x.role==='user'});

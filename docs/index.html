@@ -176,7 +176,7 @@ var cdnIdx=0;
 (function loadCDN(){
   var st=document.getElementById('login-error');
   if(cdnIdx>=CDNS.length){if(st)st.textContent='⚠ 网络连接失败，请刷新重试';document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';return}
-  if(st)st.textContent='正在连接服务器...('+(cdnIdx+1)+'/'+CDNS.length+')';
+  if(st)st.textContent='正在连接服务器...';
   var s=document.createElement('script');s.src=CDNS[cdnIdx];
   s.onload=function(){document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';if(st)st.textContent='';initApp()};
   s.onerror=function(){cdnIdx++;loadCDN()};document.head.appendChild(s);

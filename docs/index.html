@@ -197,6 +197,7 @@ function initApp(){
   }catch(e){if(d)d.textContent="initApp ERROR: "+e.message;document.getElementById('login-error').textContent='⚠ 初始化失败：'+e.message;document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';return;}
   document.getElementById("login-btn").disabled=false;document.getElementById("login-btn").innerHTML="登 录";supabaseClient.auth.getSession().then(function(r){
     if(r.data&&r.data.session&&r.data.session.user){
+          supabaseClient.auth._setSession(r.data.session);
       currentUser=r.data.session.user;
       checkUserRole().then(function(){var ph=currentUser.user_metadata?currentUser.user_metadata.phone||'':'';enterApp(ph)});
     }else{hideLoading();}

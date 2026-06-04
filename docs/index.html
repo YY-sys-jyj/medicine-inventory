@@ -206,14 +206,14 @@ async function checkUserRole(){
   var phone=(currentUser.user_metadata&&currentUser.user_metadata.phone)||'';
   if(phone===SUPER_ADMIN_PHONE){
     var r=await supabaseClient.from('user_roles').select('*').eq('user_id',currentUser.id).maybeSingle();
-    if(!r.data)await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'super_admin',admin_level:1,phone:phone});
+    if(!r.data)await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'super_admin',admin_level:1});
     else if(r.data.role!=='super_admin')await supabaseClient.from('user_roles').update({role:'super_admin',admin_level:1}).eq('user_id',currentUser.id);
     userRole='super_admin';return;
   }
   var r=await supabaseClient.from('user_roles').select('*').eq('user_id',currentUser.id).maybeSingle();
   if(r.data){userRole=r.data.role;return}
   var trialEnds=new Date(Date.now()+24*60*60*1000).toISOString();
-  await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'user',trial_ends_at:trialEnds,phone:phone});
+  await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'user',trial_ends_at:trialEnds});
   userRole='user';
 }
 function enterApp(phone){
@@ -394,7 +394,7 @@ function switchTab(tab){
 }
 async function renderAdmin(){
 	  var c=document.getElementById('admin-content');c.innerHTML='<div class="loading-spinner"></div>';
-	  var r=await supabaseClient.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at,phone').order('created_at',{ascending:false});
+	  var r=await supabaseClient.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at').order('created_at',{ascending:false});
 	  if(!r.data||!r.data.length){var h2='<div class="stats-bar" style="margin-bottom:18px"><div class="stat-card"><div class="stat-label">管理员数</div><div class="stat-value">1</div></div><div class="stat-card"><div class="stat-label">普通用户数</div><div class="stat-value">0</div></div><div class="stat-card"><div class="stat-label">总用户数</div><div class="stat-value">1</div></div></div>';h2+='<div class="admin-section"><h3>管理员列表（1人）</h3><table><thead><tr><th>角色</th><th>说明</th></tr></thead><tbody><tr><td><span class="badge badge-red">超级管理员</span></td><td>当前账号（手机号：'+SUPER_ADMIN_PHONE+'）</td></tr></tbody></table></div>';c.innerHTML=h2;return}
 	  var now=new Date();
 	  var admins=r.data.filter(function(x){return x.role==='super_admin'||x.role==='admin'});
@@ -416,8 +416,8 @@ async function renderAdmin(){
 	  if(userRole==='super_admin'||userRole==='admin'){
 	    h+='<div class="admin-section"><h3>普通用户列表（'+users.length+'人）</h3>';
 	    if(!users.length)h+='<p style="font-size:12px;color:var(--text3)">暂无普通用户</p>';
-	    else{h+='<table><thead><tr><th>手机号</th><th>用户标识</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
-	      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at):null;var paidUntil=u.paid_until?new Date(u.paid_until):null;var trialStr=trialEnd?fmtDate(u.trial_ends_at):'-';if(trialEnd&&trialEnd<=now&&(!paidUntil||paidUntil<=now))trialStr='<span style="color:var(--red)">'+trialStr+'（已到期）</span>';else if(trialEnd&&trialEnd>now)trialStr='<span style="color:var(--yellow)">'+trialStr+'（试用中）</span>';var paidStr=paidUntil?fmtDate(u.paid_until):'-';if(paidUntil&&paidUntil>now)paidStr='<span style="color:var(--green)">'+paidStr+'（有效）</span>';h+='<tr><td>'+(u.phone||'-')+'</td><td><code>'+esc(u.user_id.substring(0,10))+'...</code></td><td>'+trialStr+'</td><td>'+paidStr+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
+	    else{h+='<table><thead><tr><th>用户标识</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
+	      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at):null;var paidUntil=u.paid_until?new Date(u.paid_until):null;var trialStr=trialEnd?fmtDate(u.trial_ends_at):'-';if(trialEnd&&trialEnd<=now&&(!paidUntil||paidUntil<=now))trialStr='<span style="color:var(--red)">'+trialStr+'（已到期）</span>';else if(trialEnd&&trialEnd>now)trialStr='<span style="color:var(--yellow)">'+trialStr+'（试用中）</span>';var paidStr=paidUntil?fmtDate(u.paid_until):'-';if(paidUntil&&paidUntil>now)paidStr='<span style="color:var(--green)">'+paidStr+'（有效）</span>';h+='<tr><td><code>'+esc(u.user_id.substring(0,10))+'...</code></td><td>'+trialStr+'</td><td>'+paidStr+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
 	      h+='</tbody></table>';}
 	    h+='</div>';
 	  }

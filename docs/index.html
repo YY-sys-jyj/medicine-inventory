@@ -169,48 +169,10 @@ tr:hover td{background:#fafbfc}
 </div>
 <div class="modal-overlay hidden" id="product-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="product-modal-title">新增品种</h3><button class="modal-close" onclick="closeProductModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">品种名称</label><input class="form-input" id="f-name" placeholder="阿莫西林胶囊"></div><div class="form-group"><label class="form-label">批号</label><input class="form-input" id="f-batch" placeholder="20250601A"></div><div class="form-row"><div class="form-group"><label class="form-label">有效期至</label><input class="form-input" type="date" id="f-expiry"></div><div class="form-group"><label class="form-label">库存量</label><input class="form-input" type="number" id="f-stock" min="0" placeholder="0"></div></div><div class="form-group"><label class="form-label">最近一个月销量</label><input class="form-input" type="number" id="f-sales" min="0" placeholder="0"></div><input type="hidden" id="f-id"></div><div class="modal-foot"><button class="btn" onclick="closeProductModal()">取消</button><button class="btn btn-primary" onclick="saveProduct()">保存</button></div></div></div>
 <div class="modal-overlay hidden" id="payment-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="payment-modal-title">新增医院</h3><button class="modal-close" onclick="closePaymentModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">医院名称</label><input class="form-input" id="fp-hospital" placeholder="XX市人民医院"></div><div class="form-row"><div class="form-group"><label class="form-label">付款周期</label><select class="form-input" id="fp-cycle"><option value="每月">每月</option><option value="每季度" selected>每季度</option><option value="每半年">每半年</option><option value="每年">每年</option><option value="不定期">不定期</option></select></div><div class="form-group"><label class="form-label">下次回款日期</label><input class="form-input" type="date" id="fp-date"></div></div><div class="form-group"><label class="form-label">预计回款金额</label><input class="form-input" type="number" id="fp-amount" min="0" placeholder="0"></div><div class="form-group"><label class="form-label">付款流程说明</label><textarea class="form-textarea" id="fp-process" placeholder="药剂科提交→院长审批→财务付款"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">关键联系人</label><input class="form-input" id="fp-contact" placeholder="姓名"></div><div class="form-group"><label class="form-label">职务</label><input class="form-input" id="fp-role" placeholder="采购办主任"></div></div><div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="fp-phone" placeholder="手机或座机"></div><div class="form-group"><label class="form-label">备注</label><input class="form-input" id="fp-notes" placeholder="其他信息"></div><input type="hidden" id="fp-id"></div><div class="modal-foot"><button class="btn" onclick="closePaymentModal()">取消</button><button class="btn btn-primary" onclick="savePayment()">保存</button></div></div></div>
-<div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div><script>
-alert("SCRIPT BLOCK 1 STARTED");
-// CDN加载器（带超时）
-var CDNS=['https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js','https://gcore.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js','https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'];
-var cdnIdx=0,cdnTimer=null;
-(function loadCDN(){
-  var st=document.getElementById('login-error');
-  if(cdnIdx>=CDNS.length){
-    if(st)st.textContent='⚠ 网络连接失败，请刷新重试';
-    document.getElementById('login-btn').disabled=false;
-    document.getElementById('login-btn').innerHTML='登 录';
-    return;
-  }
-  if(st)st.textContent='正在连接服务器...('+(cdnIdx+1)+'/'+CDNS.length+')';
-  var s=document.createElement('script');
-  s.src=CDNS[cdnIdx];
-  s.onload=function(){
-    clearTimeout(cdnTimer);
-    document.getElementById('login-btn').disabled=false;
-    document.getElementById('login-btn').innerHTML='登 录';
-    if(st)st.textContent='';
-    initApp();
-  };
-  s.onerror=function(){
-    clearTimeout(cdnTimer);
-    cdnIdx++;
-    loadCDN();
-  };
-  document.head.appendChild(s);
-  cdnTimer=setTimeout(function(){
-    clearTimeout(cdnTimer);
-    s.onerror=null;s.onload=null;
-    try{s.remove()}catch(e){}
-    cdnIdx++;
-    loadCDN();
-  },5000);
-})();
-</script>
+<div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div><script src="supabase.js"></script>
 
 
 <script>
-alert("SCRIPT BLOCK 2 STARTED");
 (function(){var d=document.getElementById("debug-status");if(d){d.textContent="window.supabase="+(typeof window.supabase)+"  supabase="+(typeof supabaseClient)+"  URL="+window.location.href;}})();
 var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>
@@ -228,7 +190,7 @@ function initApp(){
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     if(d)d.textContent="initApp: client created, supabase="+(typeof supabaseClient)+" auth="+!!(supabaseClient&&supabaseClient.auth);
   }catch(e){if(d)d.textContent="initApp ERROR: "+e.message;document.getElementById('login-error').textContent='⚠ 初始化失败：'+e.message;document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';return;}
-  supabaseClient.auth.getSession().then(function(r){
+  document.getElementById("login-btn").disabled=false;document.getElementById("login-btn").innerHTML="登 录";supabaseClient.auth.getSession().then(function(r){
     if(r.data&&r.data.session&&r.data.session.user){
       currentUser=r.data.session.user;
       checkUserRole().then(function(){var ph=currentUser.user_metadata?currentUser.user_metadata.phone||'':'';enterApp(ph)});
@@ -487,9 +449,7 @@ document.getElementById('payment-modal-overlay').addEventListener('click',functi
 document.getElementById('admin-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeAdminModal()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
-
-
-
+initApp();
 </script>
 </body>
 </html>

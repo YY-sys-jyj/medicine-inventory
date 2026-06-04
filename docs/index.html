@@ -133,7 +133,7 @@ tr:hover td{background:#fafbfc}
 </head>
 <body>
 <div class="loading-overlay hidden" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">...</span></div>
-<div id="debug-status" style="position:fixed;top:0;left:0;right:0;background:#1a1d23;color:#fff;padding:4px 12px;font-size:11px;z-index:9999;font-family:monospace;text-align:center"></div>
+<div id="debug-status" style="display:none;position:fixed;top:0;left:0;right:0;background:#1a1d23;color:#fff;padding:4px 12px;font-size:11px;z-index:9999;font-family:monospace;text-align:center"></div>
 <div class="login-page" id="login-page">
   <div class="login-card">
     <h1>医药库存动销管理</h1><p class="login-sub">效期预警 & 回款管理系统</p>
@@ -155,7 +155,7 @@ tr:hover td{background:#fafbfc}
       <button class="nav-item" data-tab="payment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>回款管理<span class="nav-badge hidden" id="nav-pay-badge">0</span></button>
       <button class="nav-item admin-only" data-tab="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>系统管理</button>
     </nav>
-    <div class="sidebar-footer"><button class="logout-btn" onclick="handleLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>退出登录</button><div style="font-size:10px;color:var(--text3);padding:4px 11px 0">by YY-sys-jyj</div></div>
+    <div class="sidebar-footer"><div id="sidebar-status" style="padding:6px 11px;font-size:11px;color:var(--text2);line-height:1.5;display:none"></div><button class="logout-btn" onclick="handleLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>退出登录</button><div style="font-size:10px;color:var(--text3);padding:4px 11px 0">by YY-sys-jyj</div></div>
   </aside>
   <main class="main">
     <div class="trial-banner hidden" id="trial-banner"><span id="trial-text"></span><button class="trial-btn hidden" id="trial-btn" onclick="handlePayment()">立即续费 ¥2/月</button></div>
@@ -221,15 +221,34 @@ function enterApp(phone){
 }
 async function updateTrialBanner(){
   var banner=document.getElementById('trial-banner'),text=document.getElementById('trial-text'),btn=document.getElementById('trial-btn');
-  if(!userRole||userRole==='super_admin'||userRole==='admin'){banner.classList.add('hidden');return}
+  var sidebarStatus=document.getElementById('sidebar-status');
+  if(!userRole||userRole==='super_admin'||userRole==='admin'){
+    banner.classList.add('hidden');
+    if(sidebarStatus)sidebarStatus.style.display='none';
+    return;
+  }
   var r=await supabaseClient.from('user_roles').select('trial_ends_at,paid_until').eq('user_id',currentUser.id).single();
-  if(!r.data){banner.classList.add('hidden');return}
+  if(!r.data){banner.classList.add('hidden');if(sidebarStatus)sidebarStatus.style.display='none';return}
   var now=new Date(),paidUntil=r.data.paid_until?new Date(r.data.paid_until):null;
-  if(paidUntil&&paidUntil>now){var days=Math.ceil((paidUntil-now)/86400000);text.textContent='已付费 · 剩余 '+days+' 天';banner.className='trial-banner';banner.classList.remove('hidden');btn.classList.add('hidden');return}
+  if(paidUntil&&paidUntil>now){
+    var days=Math.ceil((paidUntil-now)/86400000);
+    text.textContent='已付费 · 剩余 '+days+' 天';
+    banner.className='trial-banner';banner.classList.remove('hidden');btn.classList.add('hidden');
+    if(sidebarStatus){sidebarStatus.style.display='block';sidebarStatus.innerHTML='<span style="color:var(--green)">✅ 已付费</span><br>剩余 <b>'+days+'</b> 天 · ¥2/月';}
+    return;
+  }
   var trialEnds=r.data.trial_ends_at?new Date(r.data.trial_ends_at):null;
-  if(!trialEnds){banner.classList.add('hidden');return}
-  if(now<trialEnds){var hours=Math.ceil((trialEnds-now)/3600000);text.textContent='免费试用中 · 剩余 '+hours+' 小时 · 试用结束后需付费 ¥2/月继续使用';banner.className='trial-banner';banner.classList.remove('hidden');btn.classList.add('hidden');return}
-  text.textContent='试用已到期 · 付费 ¥2/月即可继续使用 · 数据不会丢失';banner.className='trial-banner expired';banner.classList.remove('hidden');btn.classList.remove('hidden');
+  if(!trialEnds){banner.classList.add('hidden');if(sidebarStatus)sidebarStatus.style.display='none';return}
+  if(now<trialEnds){
+    var hours=Math.ceil((trialEnds-now)/3600000);
+    text.textContent='免费试用中 · 剩余 '+hours+' 小时 · 试用结束后需付费 ¥2/月继续使用';
+    banner.className='trial-banner';banner.classList.remove('hidden');btn.classList.add('hidden');
+    if(sidebarStatus){sidebarStatus.style.display='block';sidebarStatus.innerHTML='<span style="color:var(--yellow)">🕐 免费试用中</span><br>剩余 <b>'+hours+'</b> 小时<br><span style="font-size:10px;color:var(--text3)">试用结束后需付费 ¥2/月</span>';}
+    return;
+  }
+  text.textContent='试用已到期 · 付费 ¥2/月即可继续使用 · 数据不会丢失';
+  banner.className='trial-banner expired';banner.classList.remove('hidden');btn.classList.remove('hidden');
+  if(sidebarStatus){sidebarStatus.style.display='block';sidebarStatus.innerHTML='<span style="color:var(--red)">🔴 试用已到期</span><br><span style="font-size:10px">付费 ¥2/月即可继续使用<br>数据不会丢失</span>';}
 }
 function handlePayment(){
   if(!confirm('确认续费 ¥2/月？\n\n（演示模式：点击确认即完成续费）'))return;
@@ -355,30 +374,36 @@ function switchTab(tab){
   if(tab==='ledger')renderLedger();if(tab==='warnings')renderWarnings();if(tab==='report')renderReport();if(tab==='payment')renderPayments();if(tab==='admin')renderAdmin();
 }
 async function renderAdmin(){
-  var c=document.getElementById('admin-content');c.innerHTML='<div class="loading-spinner"></div>';
-  var r=await supabaseClient.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at').order('created_at',{ascending:false});
-  if(!r.data||!r.data.length){c.innerHTML='<div class="empty-state"><p>暂无用户</p></div>';return}
-  var phones={};for(var i=0;i<r.data.length;i++)phones[r.data[i].user_id]='用户'+i;
-  var h='';
-  if(userRole==='super_admin'){
-    h+='<div class="admin-section"><h3>管理员列表</h3>';
-    var admins=r.data.filter(function(x){return x.role==='super_admin'||x.role==='admin'});
-    if(admins.length){h+='<table><thead><tr><th>用户ID</th><th>角色</th><th>级别</th><th>添加时间</th><th>操作</th></tr></thead><tbody>';
-      admins.forEach(function(a){h+='<tr><td><code>'+esc(a.user_id.substring(0,8))+'...</code></td><td>'+(a.role==='super_admin'?'超级管理员':'管理员')+'</td><td>'+(a.admin_level||'-')+'</td><td>'+fmtDate(a.created_at)+'</td>'+(a.role!=='super_admin'?'<td><button class="btn btn-sm btn-danger" onclick="removeAdmin(\''+a.user_id+'\')">移除</button></td>':'<td>—</td>')+'</tr>'});
-      h+='</tbody></table>';}else h+='<p style="font-size:12px;color:var(--text3)">暂无其他管理员</p>';
-    h+='</div>';
-  }
-  if(userRole==='super_admin'||userRole==='admin'){
-    h+='<div class="admin-section"><h3>普通用户列表</h3>';
-    var users=r.data.filter(function(x){return x.role==='user'});
-    if(!users.length)h+='<p style="font-size:12px;color:var(--text3)">暂无普通用户</p>';
-    else{h+='<table><thead><tr><th>用户ID</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
-      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at).toLocaleDateString('zh-CN'):'-';var paidUntil=u.paid_until?new Date(u.paid_until).toLocaleDateString('zh-CN'):'-';h+='<tr><td><code>'+esc(u.user_id.substring(0,8))+'...</code></td><td>'+trialEnd+'</td><td>'+paidUntil+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
-      h+='</tbody></table>';}
-    h+='</div>';
-  }
-  c.innerHTML=h||'<div class="empty-state"><p>无管理权限</p></div>';
-}
+	  var c=document.getElementById('admin-content');c.innerHTML='<div class="loading-spinner"></div>';
+	  var r=await supabaseClient.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at').order('created_at',{ascending:false});
+	  if(!r.data||!r.data.length){c.innerHTML='<div class="empty-state"><p>暂无用户</p></div>';return}
+	  var now=new Date();
+	  var admins=r.data.filter(function(x){return x.role==='super_admin'||x.role==='admin'});
+	  var users=r.data.filter(function(x){return x.role==='user'});
+	  var trialUsers=users.filter(function(u){var t=u.trial_ends_at?new Date(u.trial_ends_at):null;return t&&t>now&&(!u.paid_until||new Date(u.paid_until)<=now)}).length;
+	  var paidUsers=users.filter(function(u){var p=u.paid_until?new Date(u.paid_until):null;return p&&p>now}).length;
+	  var h='<div class="stats-bar" style="margin-bottom:18px">';
+	  h+='<div class="stat-card"><div class="stat-label">管理员数</div><div class="stat-value">'+admins.length+'</div></div>';
+	  h+='<div class="stat-card"><div class="stat-label">普通用户数</div><div class="stat-value">'+users.length+'</div><div class="stat-sub">试用中 '+trialUsers+' · 已付费 '+paidUsers+'</div></div>';
+	  h+='<div class="stat-card"><div class="stat-label">总用户数</div><div class="stat-value">'+r.data.length+'</div></div>';
+	  h+='</div>';
+	  if(userRole==='super_admin'){
+	    h+='<div class="admin-section"><h3>管理员列表（'+admins.length+'人）</h3>';
+	    if(admins.length){h+='<table><thead><tr><th>用户标识</th><th>角色</th><th>级别</th><th>添加时间</th><th>操作</th></tr></thead><tbody>';
+	      admins.forEach(function(a){h+='<tr><td><code>'+esc(a.user_id.substring(0,10))+'...</code></td><td>'+(a.role==='super_admin'?'<span class="badge badge-red">超级管理员</span>':'<span class="badge badge-yellow">管理员</span>')+'</td><td>'+(a.admin_level||'-')+'</td><td>'+fmtDate(a.created_at)+'</td>'+(a.role!=='super_admin'?'<td><button class="btn btn-sm btn-danger" onclick="removeAdmin(''+a.user_id+'')">移除</button></td>':'<td>—</td>')+'</tr>'});
+	      h+='</tbody></table>';}else h+='<p style="font-size:12px;color:var(--text3)">暂无其他管理员</p>';
+	    h+='</div>';
+	  }
+	  if(userRole==='super_admin'||userRole==='admin'){
+	    h+='<div class="admin-section"><h3>普通用户列表（'+users.length+'人）</h3>';
+	    if(!users.length)h+='<p style="font-size:12px;color:var(--text3)">暂无普通用户</p>';
+	    else{h+='<table><thead><tr><th>用户标识</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
+	      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at):null;var paidUntil=u.paid_until?new Date(u.paid_until):null;var trialStr=trialEnd?fmtDate(u.trial_ends_at):'-';if(trialEnd&&trialEnd<=now&&(!paidUntil||paidUntil<=now))trialStr='<span style="color:var(--red)">'+trialStr+'（已到期）</span>';else if(trialEnd&&trialEnd>now)trialStr='<span style="color:var(--yellow)">'+trialStr+'（试用中）</span>';var paidStr=paidUntil?fmtDate(u.paid_until):'-';if(paidUntil&&paidUntil>now)paidStr='<span style="color:var(--green)">'+paidStr+'（有效）</span>';h+='<tr><td><code>'+esc(u.user_id.substring(0,10))+'...</code></td><td>'+trialStr+'</td><td>'+paidStr+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm btn-danger" onclick="removeUser(''+u.user_id+'')">移除</button></td></tr>'});
+	      h+='</tbody></table>';}
+	    h+='</div>';
+	  }
+	  c.innerHTML=h||'<div class="empty-state"><p>无管理权限</p></div>';
+	}
 function openAdminModal(){document.getElementById('admin-modal-overlay').classList.remove('hidden');document.getElementById('fa-phone').value=''}
 function closeAdminModal(){document.getElementById('admin-modal-overlay').classList.add('hidden')}
 async function addAdmin(){

@@ -129,7 +129,19 @@ tr:hover td{background:#fafbfc}
 .admin-section h3{font-size:13px;font-weight:600;margin-bottom:10px}
 @media print{.sidebar,.btn,.modal-overlay,.filter-bar,.stats-bar{display:none!important}.main{margin-left:0;padding:0}.panel{box-shadow:none;border:none}}
 </style>
-<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js" onerror="document.getElementById('login-error').textContent='CDN加载失败，请刷新页面';var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';document.head.appendChild(s)"></script>
+<script>
+// CDN加载器
+var CDNS=['https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js','https://esm.sh/@supabase/supabase-js@2/dist/umd/supabase.min.js'];
+var cdnIdx=0;
+(function loadCDN(){
+  var st=document.getElementById('login-error');
+  if(cdnIdx>=CDNS.length){if(st)st.textContent='⚠ 网络连接失败，请检查网络后刷新重试';document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';return}
+  if(st)st.textContent='正在连接服务器...('+(cdnIdx+1)+'/'+CDNS.length+')';
+  var s=document.createElement('script');s.src=CDNS[cdnIdx];
+  s.onload=function(){document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';if(st)st.textContent='';initApp()};
+  s.onerror=function(){cdnIdx++;loadCDN()};document.head.appendChild(s);
+})();
+</script>
 </head>
 <body>
 <div class="loading-overlay hidden" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">...</span></div>
@@ -139,7 +151,7 @@ tr:hover td{background:#fafbfc}
     <h1>医药库存动销管理</h1><p class="login-sub">效期预警 & 回款管理系统</p>
     <div class="form-group"><label class="form-label">手机号 / 邮箱</label><input class="form-input" type="text" id="login-phone" placeholder="手机号或邮箱" autocomplete="username"></div>
     <div class="form-group"><label class="form-label">密码</label><input class="form-input" type="password" id="login-password" placeholder="设置/输入密码（至少6位）" minlength="6" autocomplete="new-password"></div>
-    <button class="login-btn" id="login-btn" onclick="handleLogin()">登 录</button>
+    <button class="login-btn" id="login-btn" onclick="handleLogin()" disabled>正在加载...</button>
     <div class="login-error" id="login-error"></div>
     <p class="login-hint">首次登录将自动注册账号<br>手机号或邮箱作为唯一身份标识</p>
     <p style="font-size:10px;color:#9ca3af;margin-top:8px">Created by YY-sys-jyj</p>
@@ -182,12 +194,12 @@ function showLoading(m){document.getElementById('loading-text').textContent=m||'
 function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}
 function initApp(){
   var d=document.getElementById("debug-status");
-  if(!window.supabase){if(d)d.textContent="initApp: window.supabase MISSING";return;}
+  if(!window.supabase){if(d)d.textContent="initApp: window.supabase MISSING";document.getElementById('login-error').textContent='⚠ 组件加载失败，请刷新页面重试';document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';return;}
   if(d)d.textContent="initApp: creating client...";
   try{
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     if(d)d.textContent="initApp: client created, supabase="+(typeof supabaseClient)+" auth="+!!(supabaseClient&&supabaseClient.auth);
-  }catch(e){if(d)d.textContent="initApp ERROR: "+e.message;return;}
+  }catch(e){if(d)d.textContent="initApp ERROR: "+e.message;document.getElementById('login-error').textContent='⚠ 初始化失败：'+e.message;document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').innerHTML='登 录';return;}
   supabaseClient.auth.getSession().then(function(r){
     if(r.data&&r.data.session&&r.data.session.user){
       currentUser=r.data.session.user;
@@ -450,7 +462,6 @@ document.getElementById('login-password').addEventListener('keydown',function(e)
 
 
 
-function startApp(){var d=document.getElementById("debug-status");if(typeof window.supabase!=="undefined"){if(d)d.textContent="CDN OK";initApp()}else{var retries=parseInt(sessionStorage.getItem('cdn_retries')||'0')+1;sessionStorage.setItem('cdn_retries',retries);if(d)d.textContent="CDN retry "+retries;if(retries<=10){setTimeout(startApp,600)}else{document.getElementById("login-error").textContent="网络加载失败，请刷新页面重试"}}}setTimeout(startApp,300)
 </script>
 </body>
 </html>

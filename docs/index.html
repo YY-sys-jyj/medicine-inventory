@@ -127,6 +127,7 @@ tr:hover td{background:#fafbfc}
 .loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 .admin-section{margin-bottom:24px}
 .admin-section h3{font-size:13px;font-weight:600;margin-bottom:10px}
+.chart-bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:6px}.chart-bar-label{width:140px;font-size:11px;text-align:right;color:var(--text2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chart-bar-track{flex:1;background:#f3f4f6;border-radius:3px;height:18px;overflow:hidden;position:relative}.chart-bar-fill{height:100%;border-radius:3px;transition:width .3s;min-width:2px}.chart-bar-fill.blue{background:var(--accent)}.chart-bar-fill.green{background:var(--green)}.chart-bar-fill.yellow{background:var(--yellow)}.chart-bar-fill.red{background:var(--red)}.chart-bar-val{font-size:10px;color:var(--text2);width:50px;flex-shrink:0}.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:768px){.chart-grid{grid-template-columns:1fr}}
 @media print{.sidebar,.btn,.modal-overlay,.filter-bar,.stats-bar{display:none!important}.main{margin-left:0;padding:0}.panel{box-shadow:none;border:none}}
 </style>
 
@@ -361,6 +362,21 @@ function renderReport(){
   var tS=products.reduce(function(s,p){return s+(p.stock||0)},0),tL=products.reduce(function(s,p){return s+(p.last_month_sales||p.lastMonthSales||0)},0),tR=tL>0?(tS/(tL/30)).toFixed(1):'-';
   var near=products.filter(function(p){return warnLevel(p)!=='green'}).sort(function(a,b){return new Date(a.expiry_date||a.expiryDate)-new Date(b.expiry_date||b.expiryDate)});
   var c=document.getElementById('report-content'),h='<div class="report-meta"><span>日期：<strong>'+dt+'</strong></span><span>品种：<strong>'+products.length+'</strong></span><span>库存：<strong>'+tS.toLocaleString()+'</strong></span></div>';
+  // CSS柱状图：月销量+库存排行
+  var topSales=products.slice().sort(function(a,b){return(b.last_month_sales||b.lastMonthSales||0)-(a.last_month_sales||a.lastMonthSales||0)}).slice(0,8);
+  var maxSales=topSales.length?Math.max.apply(null,topSales.map(function(p){return p.last_month_sales||p.lastMonthSales||0})):1;
+  h+='<div class="report-section"><h3>📊 月销量排行</h3><div class="chart-grid"><div>';
+  topSales.forEach(function(p){var v=p.last_month_sales||p.lastMonthSales||0;var pct=maxSales>0?(v/maxSales*100):0;
+    h+='<div class="chart-bar-wrap"><div class="chart-bar-label" title="'+esc(p.name||'')+'">'+esc((p.name||'').length>12?(p.name||'').substring(0,11)+'…':(p.name||''))+'</div><div class="chart-bar-track"><div class="chart-bar-fill blue" style="width:'+pct+'%"></div></div><div class="chart-bar-val">'+v.toLocaleString()+'</div></div>';
+  });
+  h+='</div><div>';
+  var topStock=products.slice().sort(function(a,b){return(b.stock||0)-(a.stock||0)}).slice(0,8);
+  var maxStock=topStock.length?Math.max.apply(null,topStock.map(function(p){return p.stock||0})):1;
+  h+='<div style="font-size:13px;font-weight:600;margin-bottom:8px">📦 库存量排行</div>';
+  topStock.forEach(function(p){var v=p.stock||0;var pct=maxStock>0?(v/maxStock*100):0;var color=v>500?'green':v>200?'blue':'yellow';
+    h+='<div class="chart-bar-wrap"><div class="chart-bar-label" title="'+esc(p.name||'')+'">'+esc((p.name||'').length>12?(p.name||'').substring(0,11)+'…':(p.name||''))+'</div><div class="chart-bar-track"><div class="chart-bar-fill '+color+'" style="width:'+pct+'%"></div></div><div class="chart-bar-val">'+v.toLocaleString()+'</div></div>';
+  });
+  h+='</div></div></div>';
   h+='<div class="report-section"><h3>一、各品种销售情况</h3><table><thead><tr><th>品种</th><th>批号</th><th>库存</th><th>月销</th><th>日均</th><th>周转天</th><th>状态</th></tr></thead><tbody>';
   products.slice().sort(function(a,b){return(b.last_month_sales||b.lastMonthSales||0)-(a.last_month_sales||a.lastMonthSales||0)}).forEach(function(p){
     var lv=warnLevel(p);h+='<tr><td>'+esc(p.name||'')+'</td><td>'+esc(p.batch||'')+'</td><td>'+(p.stock||0)+'</td><td>'+(p.last_month_sales||p.lastMonthSales||0)+'</td><td>'+dailySales(p).toFixed(1)+'</td><td>'+(turnoverDays(p)===Infinity?'-':turnoverDays(p))+'</td><td><span class="badge badge-'+lv+'">'+{red:'红灯',yellow:'黄灯',green:'正常'}[lv]+'</span></td></tr>';

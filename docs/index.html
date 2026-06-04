@@ -267,14 +267,14 @@ async function handleLogin(){
   if(!supabaseClient){err.textContent='正在连接服务器';return}
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>验证中...';
   var email=phoneToEmail(phone),result=await supabaseClient.auth.signInWithPassword({email:email,password:pw});
-  if(result.error&&result.error.message.indexOf('Invalid login credentials')>=0){
+  if(result.error&&((result.error.message||result.error.error||'').toLowerCase().indexOf('invalid')>=0)){
     result=await supabaseClient.auth.signUp({email:email,password:pw});
-    if(result.error){err.textContent='注册失败：'+result.error.message;btn.disabled=false;btn.innerHTML='登 录';return}
+    if(result.error){err.textContent='注册失败';btn.disabled=false;btn.innerHTML='登 录';return}
     result=await supabaseClient.auth.signInWithPassword({email:email,password:pw});
-    if(result.error){err.textContent='登录失败：'+result.error.message;btn.disabled=false;btn.innerHTML='登 录';return}
-  }else if(result.error){err.textContent='登录失败：'+result.error.message;btn.disabled=false;btn.innerHTML='登 录';return}
-  currentUser=result.data.user;
-  if(!currentUser.user_metadata||!currentUser.user_metadata.phone)await supabaseClient.auth.updateUser({data:{phone:phone}});
+    if(result.error){err.textContent='登录失败';btn.disabled=false;btn.innerHTML='登 录';return}
+  }else if(result.error){err.textContent='登录失败';btn.disabled=false;btn.innerHTML='登 录';return}
+  currentUser=(result.data.session||result.data).user;
+  if(!currentUser||!currentUser.user_metadata||!currentUser.user_metadata.phone)try{await supabaseClient.auth.updateUser({data:{phone:phone}})}catch(e){};
   await checkUserRole();enterApp(phone);
 }
 async function handleLogout(){

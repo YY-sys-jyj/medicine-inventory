@@ -427,7 +427,7 @@ async function renderAdmin(){
 	  var paidUsers=users.filter(function(u){var p=u.paid_until?new Date(u.paid_until):null;return p&&p>now}).length;
 	  var h='<div class="stats-bar" style="margin-bottom:18px">';
 	  h+='<div class="stat-card"><div class="stat-label">管理员数</div><div class="stat-value">'+admins.length+'</div></div>';
-	  h+='<div class="stat-card"><div class="stat-label">普通用户数</div><div class="stat-value">'+users.length+'</div><div class="stat-sub">试用中 '+trialUsers+' · 已付费 '+paidUsers+'</div></div>';
+	  var noPhone=users.filter(function(u){return!u.phone}).length;h+='<div class="stat-card"><div class="stat-label">普通用户数</div><div class="stat-value">'+users.length+'</div><div class="stat-sub">试用中 '+trialUsers+' · 已付费 '+paidUsers+(noPhone>0?' · <span style=\"color:var(--red)\">'+noPhone+'人缺手机号</span>':'')+'</div></div>';
 	  h+='<div class="stat-card"><div class="stat-label">总用户数</div><div class="stat-value">'+r.data.length+'</div></div>';
 	  h+='</div>';
 	  if(userRole==='super_admin'){
@@ -441,7 +441,7 @@ async function renderAdmin(){
 	    h+='<div class="admin-section"><h3>普通用户列表（'+users.length+'人）</h3>';
 	    if(!users.length)h+='<p style="font-size:12px;color:var(--text3)">暂无普通用户</p>';
 	    else{h+='<table><thead><tr><th>手机号</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
-	      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at):null;var paidUntil=u.paid_until?new Date(u.paid_until):null;var trialStr=trialEnd?fmtDate(u.trial_ends_at):'-';if(trialEnd&&trialEnd<=now&&(!paidUntil||paidUntil<=now))trialStr='<span style="color:var(--red)">'+trialStr+'（已到期）</span>';else if(trialEnd&&trialEnd>now)trialStr='<span style="color:var(--yellow)">'+trialStr+'（试用中）</span>';var paidStr=paidUntil?fmtDate(u.paid_until):'-';if(paidUntil&&paidUntil>now)paidStr='<span style="color:var(--green)">'+paidStr+'（有效）</span>';h+='<tr><td><strong>'+(u.phone||esc(u.user_id.substring(0,8))+'...')+'</strong></td><td>'+trialStr+'</td><td>'+paidStr+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm" onclick="editUserPhone(\''+u.user_id+'\')" style="color:var(--accent)">📱</button> <button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
+	      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at):null;var paidUntil=u.paid_until?new Date(u.paid_until):null;var trialStr=trialEnd?fmtDate(u.trial_ends_at):'-';if(trialEnd&&trialEnd<=now&&(!paidUntil||paidUntil<=now))trialStr='<span style="color:var(--red)">'+trialStr+'（已到期）</span>';else if(trialEnd&&trialEnd>now)trialStr='<span style="color:var(--yellow)">'+trialStr+'（试用中）</span>';var paidStr=paidUntil?fmtDate(u.paid_until):'-';if(paidUntil&&paidUntil>now)paidStr='<span style="color:var(--green)">'+paidStr+'（有效）</span>';h+='<tr><td><strong>'+(u.phone||'<span style=\"color:var(--text3)\">待登录</span>')+'</strong></td><td>'+trialStr+'</td><td>'+paidStr+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm" onclick="editUserPhone(\''+u.user_id+'\')" style="color:var(--accent)">📱</button> <button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
 	      h+='</tbody></table>';}
 	    h+='</div>';
 	  }

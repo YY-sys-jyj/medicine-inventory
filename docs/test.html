@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>登录测试</title></head>
+<body>
+<h3>登录测试</h3>
+<input id="phone" placeholder="手机号"><br><br>
+<input id="pw" type="password" placeholder="密码"><br><br>
+<button onclick="login()">登 录</button>
+<div id="msg"></div>
+<script>
+function msg(s){document.getElementById('msg').textContent=s}
+
+// Inline supabase client
+window.supabase={createClient:function(url,key){var headers={apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"};function api(path,opts){opts=opts||{};var h=Object.assign({},headers);if(opts.headers){Object.assign(h,opts.headers);delete opts.headers}var fetchOpts={method:opts.method||"GET",headers:h};if(opts.body){fetchOpts.body=JSON.stringify(opts.body)}return fetch(url+path,fetchOpts).then(function(r){if(!r.ok){return r.json().then(function(e){return{error:e}}).catch(function(){return{error:{message:r.statusText}}})}if(r.status===204||r.headers.get("content-length")==="0")return{data:null};return r.text().then(function(t){if(!t)return{data:null};try{return{data:JSON.parse(t)}}catch(e){return{data:t}}})}).catch(function(e){return{error:{message:e.message||"Network error"}}})}return{auth:{getSession:function(){var sess=null;try{var s=localStorage.getItem("sb-"+new URL(url).hostname+"-auth-token");if(s){var p=JSON.parse(s);sess={session:{user:p.user,access_token:p.access_token,expires_at:p.expires_at}}}}catch(e){}return Promise.resolve({data:sess})},_setSession:function(data){try{localStorage.setItem("sb-"+new URL(url).hostname+"-auth-token",JSON.stringify({user:data.user,access_token:data.session?data.session.access_token:data.access_token,expires_at:data.session?data.session.expires_at:data.expires_at}))}catch(e){}if(data.session){headers["Authorization"]="Bearer "+data.session.access_token}else if(data.access_token){headers["Authorization"]="Bearer "+data.access_token}},signInWithPassword:function(opts){return api("/auth/v1/token?grant_type=password",{method:"POST",body:{email:opts.email,password:opts.password,gotrue_meta_security:{}}}).then(function(r){if(!r.error&&r.data){this._setSession(r.data)}return r}.bind(this))},signUp:function(opts){return api("/auth/v1/signup",{method:"POST",body:{email:opts.email,password:opts.password}}).then(function(r){if(!r.error&&r.data){this._setSession(r.data)}return r}.bind(this))},signOut:function(){try{localStorage.removeItem("sb-"+new URL(url).hostname+"-auth-token")}catch(e){}headers["Authorization"]="Bearer "+key;return api("/auth/v1/logout",{method:"POST"})},updateUser:function(opts){return api("/auth/v1/user",{method:"PUT",body:opts})}},from:function(table){return{_filters:[],_order:null,_ascending:true,_limit:null,select:function(cols){var q="/rest/v1/"+table+"?select="+(cols||"*");this._filters.forEach(function(f){q+="&"+f.col+"="+f.op+"."+encodeURIComponent(f.val)});if(this._order){q+="&order="+this._order+"."+(this._ascending?"asc":"desc")}if(this._limit){q+="&limit="+this._limit}return api(q)},insert:function(rows){return api("/rest/v1/"+table,{method:"POST",body:rows,headers:{Prefer:"return=representation"}})},update:function(row){var q="/rest/v1/"+table+"?";this._filters.forEach(function(f){q+=f.col+"="+f.op+"."+encodeURIComponent(f.val)+"&"});return api(q,{method:"PATCH",body:row})},delete:function(){var q="/rest/v1/"+table+"?";this._filters.forEach(function(f){q+=f.col+"="+f.op+"."+encodeURIComponent(f.val)+"&"});return api(q,{method:"DELETE"})},eq:function(col,val){this._filters.push({col:col,op:"eq",val:val});return this},neq:function(col,val){this._filters.push({col:col,op:"neq",val:val});return this},order:function(col,opts){this._order=col;if(opts&&opts.ascending===false)this._ascending=false;return this},limit:function(n){this._limit=n;return this},single:function(){this._limit=1;var s=this;return{then:function(cb){return s.select("*").then(function(r){if(r.data&&Array.isArray(r.data))r.data=r.data[0]||null;return cb?cb(r):r})}}},maybeSingle:function(){return this.single()}}}}}};
+
+var supabaseClient = window.supabase.createClient('https://lrvsblbnyismfmithqse.supabase.co', 'sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4');
+msg('客户端已创建，可以登录');
+
+async function login(){
+  var phone = document.getElementById('phone').value.trim();
+  var pw = document.getElementById('pw').value;
+  if(pw.length<6){msg('密码至少6位');return}
+  var email = phone.indexOf('@')>=0 ? phone : 'user_'+phone.replace(/\D/g,'')+'@rx.user';
+  msg('登录中...');
+  var r = await supabaseClient.auth.signInWithPassword({email:email,password:pw});
+  if(r.error){
+    if(r.error.message.indexOf('Invalid login')>=0){
+      msg('首次使用，注册中...');
+      r = await supabaseClient.auth.signUp({email:email,password:pw});
+      if(r.error){msg('注册失败：'+JSON.stringify(r.error));return}
+      r = await supabaseClient.auth.signInWithPassword({email:email,password:pw});
+      if(r.error){msg('登录失败：'+JSON.stringify(r.error));return}
+    }else{msg('错误：'+JSON.stringify(r.error));return}
+  }
+  msg('✅ 登录成功！user='+JSON.stringify(r.data.user.email));
+}
+</script>
+</body></html>

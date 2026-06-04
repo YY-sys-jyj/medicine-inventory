@@ -742,8 +742,8 @@ async function batchDeletePayments(){var checked=document.querySelectorAll('.cb-
 function openQuickStock(){document.getElementById('quick-modal-overlay').classList.remove('hidden');document.getElementById('qs-data').value='';document.getElementById('qs-msg').textContent=''}
 function closeQuickStock(){document.getElementById('quick-modal-overlay').classList.add('hidden')}
 async function processQuickStock(){var raw=document.getElementById('qs-data').value.trim();if(!raw)return;var lines=raw.split(String.fromCharCode(10)).filter(function(l){return l.trim()});var results=[];document.getElementById('qs-msg').textContent='处理中...';for(var i=0;i<lines.length;i++){var parts=lines[i].split(',');var name=parts[0].trim();var qty=parseInt(parts[1])||0;if(!name||qty===0)continue;var exist=products.find(function(p){return p.name===name});if(exist){var ns=exist.stock+qty;if(ns<0){results.push(name+':出库失败(库存不足)');continue}await supabaseClient.from('products').update({stock:ns}).eq('id',exist.id);await supabaseClient.from('inventory_logs').insert({product_id:exist.id,product_name:name,type:qty>0?'in':'out',quantity:Math.abs(qty),stock_after:ns,note:'快速出入库',user_id:currentUser.id});results.push(name+':'+(qty>0?'入库':'出库')+Math.abs(qty)+'→库存'+ns)}else{var nd=new Date();nd.setFullYear(nd.getFullYear()+2);var nid=uid();var ns2=Math.max(0,qty);await supabaseClient.from('products').insert({id:nid,name:name,batch:'',expiry_date:nd.toISOString().slice(0,10),stock:ns2,last_month_sales:0,user_id:currentUser.id});await supabaseClient.from('inventory_logs').insert({product_id:nid,product_name:name,type:'in',quantity:ns2,stock_after:ns2,note:'快速出入库-新品',user_id:currentUser.id});results.push(name+':新品入库'+ns2)}}document.getElementById('qs-msg').innerHTML='<b>完成：</b><br>'+results.join('<br>');loadData();toast('批量处理完成')}
-document.getElementById('quick-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeQuickStock()});
-</script>
+
+var qm=document.getElementById('quick-modal-overlay');if(qm)qm.addEventListener('click',function(e){if(e.target===e.currentTarget)closeQuickStock()});</script>
 
 
 

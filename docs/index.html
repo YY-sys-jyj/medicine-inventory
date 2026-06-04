@@ -177,6 +177,7 @@ return{auth:{getSession:function(){var sess=null;try{var s=localStorage.getItem(
 
 
 <script>
+document.getElementById('login-error').textContent='✅ 系统就绪，请登录';
 (function(){var d=document.getElementById("debug-status");if(d){d.textContent="window.supabase="+(typeof window.supabase)+"  supabase="+(typeof supabaseClient)+"  URL="+window.location.href;}})();
 var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>

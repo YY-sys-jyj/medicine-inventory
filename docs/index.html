@@ -141,6 +141,7 @@ tr:hover td{background:#fafbfc}
     <div class="form-group"><label class="form-label">密码</label><input class="form-input" type="password" id="login-password" placeholder="设置/输入密码（至少6位）" minlength="6" autocomplete="new-password"></div>
     <button class="login-btn" id="login-btn" onclick="handleLogin()">登 录</button>
     <div class="login-error" id="login-error"></div>
+	    <p style="text-align:center;margin-top:8px"><a href="javascript:openForgotModal()" style="color:var(--accent);font-size:12px;text-decoration:none">忘记密码？</a></p>
     <p class="login-hint">首次登录将自动注册账号<br>手机号或邮箱作为唯一身份标识</p>
     <p style="font-size:10px;color:#9ca3af;margin-top:8px">Created by YY-sys-jyj</p>
   </div>
@@ -169,7 +170,8 @@ tr:hover td{background:#fafbfc}
 </div>
 <div class="modal-overlay hidden" id="product-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="product-modal-title">新增品种</h3><button class="modal-close" onclick="closeProductModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">品种名称</label><input class="form-input" id="f-name" placeholder="阿莫西林胶囊"></div><div class="form-group"><label class="form-label">批号</label><input class="form-input" id="f-batch" placeholder="20250601A"></div><div class="form-row"><div class="form-group"><label class="form-label">有效期至</label><input class="form-input" type="date" id="f-expiry"></div><div class="form-group"><label class="form-label">库存量</label><input class="form-input" type="number" id="f-stock" min="0" placeholder="0"></div></div><div class="form-group"><label class="form-label">最近一个月销量</label><input class="form-input" type="number" id="f-sales" min="0" placeholder="0"></div><input type="hidden" id="f-id"></div><div class="modal-foot"><button class="btn" onclick="closeProductModal()">取消</button><button class="btn btn-primary" onclick="saveProduct()">保存</button></div></div></div>
 <div class="modal-overlay hidden" id="payment-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="payment-modal-title">新增医院</h3><button class="modal-close" onclick="closePaymentModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">医院名称</label><input class="form-input" id="fp-hospital" placeholder="XX市人民医院"></div><div class="form-row"><div class="form-group"><label class="form-label">付款周期</label><select class="form-input" id="fp-cycle"><option value="每月">每月</option><option value="每季度" selected>每季度</option><option value="每半年">每半年</option><option value="每年">每年</option><option value="不定期">不定期</option></select></div><div class="form-group"><label class="form-label">下次回款日期</label><input class="form-input" type="date" id="fp-date"></div></div><div class="form-group"><label class="form-label">预计回款金额</label><input class="form-input" type="number" id="fp-amount" min="0" placeholder="0"></div><div class="form-group"><label class="form-label">付款流程说明</label><textarea class="form-textarea" id="fp-process" placeholder="药剂科提交→院长审批→财务付款"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">关键联系人</label><input class="form-input" id="fp-contact" placeholder="姓名"></div><div class="form-group"><label class="form-label">职务</label><input class="form-input" id="fp-role" placeholder="采购办主任"></div></div><div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="fp-phone" placeholder="手机或座机"></div><div class="form-group"><label class="form-label">备注</label><input class="form-input" id="fp-notes" placeholder="其他信息"></div><input type="hidden" id="fp-id"></div><div class="modal-foot"><button class="btn" onclick="closePaymentModal()">取消</button><button class="btn btn-primary" onclick="savePayment()">保存</button></div></div></div>
-<div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div><script src="supabase.js"></script>
+<div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div><div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">请输入绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" onclick="handleForgotPassword()">发送重置链接</button></div></div></div>
+<script src="supabase.js"></script>
 
 
 <script>
@@ -202,14 +204,14 @@ async function checkUserRole(){
   var phone=(currentUser.user_metadata&&currentUser.user_metadata.phone)||'';
   if(phone===SUPER_ADMIN_PHONE){
     var r=await supabaseClient.from('user_roles').select('*').eq('user_id',currentUser.id).maybeSingle();
-    if(!r.data)await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'super_admin',admin_level:1});
+    if(!r.data)await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'super_admin',admin_level:1,phone:phone});
     else if(r.data.role!=='super_admin')await supabaseClient.from('user_roles').update({role:'super_admin',admin_level:1}).eq('user_id',currentUser.id);
     userRole='super_admin';return;
   }
   var r=await supabaseClient.from('user_roles').select('*').eq('user_id',currentUser.id).maybeSingle();
   if(r.data){userRole=r.data.role;return}
   var trialEnds=new Date(Date.now()+24*60*60*1000).toISOString();
-  await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'user',trial_ends_at:trialEnds});
+  await supabaseClient.from('user_roles').insert({user_id:currentUser.id,role:'user',trial_ends_at:trialEnds,phone:phone});
   userRole='user';
 }
 function enterApp(phone){
@@ -377,7 +379,7 @@ function switchTab(tab){
 }
 async function renderAdmin(){
 	  var c=document.getElementById('admin-content');c.innerHTML='<div class="loading-spinner"></div>';
-	  var r=await supabaseClient.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at').order('created_at',{ascending:false});
+	  var r=await supabaseClient.from('user_roles').select('user_id,role,admin_level,trial_ends_at,paid_until,created_at,phone').order('created_at',{ascending:false});
 	  if(!r.data||!r.data.length){var h2='<div class="stats-bar" style="margin-bottom:18px"><div class="stat-card"><div class="stat-label">管理员数</div><div class="stat-value">1</div></div><div class="stat-card"><div class="stat-label">普通用户数</div><div class="stat-value">0</div></div><div class="stat-card"><div class="stat-label">总用户数</div><div class="stat-value">1</div></div></div>';h2+='<div class="admin-section"><h3>管理员列表（1人）</h3><table><thead><tr><th>角色</th><th>说明</th></tr></thead><tbody><tr><td><span class="badge badge-red">超级管理员</span></td><td>当前账号（手机号：'+SUPER_ADMIN_PHONE+'）</td></tr></tbody></table></div>';c.innerHTML=h2;return}
 	  var now=new Date();
 	  var admins=r.data.filter(function(x){return x.role==='super_admin'||x.role==='admin'});
@@ -399,8 +401,8 @@ async function renderAdmin(){
 	  if(userRole==='super_admin'||userRole==='admin'){
 	    h+='<div class="admin-section"><h3>普通用户列表（'+users.length+'人）</h3>';
 	    if(!users.length)h+='<p style="font-size:12px;color:var(--text3)">暂无普通用户</p>';
-	    else{h+='<table><thead><tr><th>用户标识</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
-	      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at):null;var paidUntil=u.paid_until?new Date(u.paid_until):null;var trialStr=trialEnd?fmtDate(u.trial_ends_at):'-';if(trialEnd&&trialEnd<=now&&(!paidUntil||paidUntil<=now))trialStr='<span style="color:var(--red)">'+trialStr+'（已到期）</span>';else if(trialEnd&&trialEnd>now)trialStr='<span style="color:var(--yellow)">'+trialStr+'（试用中）</span>';var paidStr=paidUntil?fmtDate(u.paid_until):'-';if(paidUntil&&paidUntil>now)paidStr='<span style="color:var(--green)">'+paidStr+'（有效）</span>';h+='<tr><td><code>'+esc(u.user_id.substring(0,10))+'...</code></td><td>'+trialStr+'</td><td>'+paidStr+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
+	    else{h+='<table><thead><tr><th>手机号</th><th>用户标识</th><th>试用到期</th><th>付费至</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
+	      users.forEach(function(u){var trialEnd=u.trial_ends_at?new Date(u.trial_ends_at):null;var paidUntil=u.paid_until?new Date(u.paid_until):null;var trialStr=trialEnd?fmtDate(u.trial_ends_at):'-';if(trialEnd&&trialEnd<=now&&(!paidUntil||paidUntil<=now))trialStr='<span style="color:var(--red)">'+trialStr+'（已到期）</span>';else if(trialEnd&&trialEnd>now)trialStr='<span style="color:var(--yellow)">'+trialStr+'（试用中）</span>';var paidStr=paidUntil?fmtDate(u.paid_until):'-';if(paidUntil&&paidUntil>now)paidStr='<span style="color:var(--green)">'+paidStr+'（有效）</span>';h+='<tr><td>'+(u.phone||'-')+'</td><td><code>'+esc(u.user_id.substring(0,10))+'...</code></td><td>'+trialStr+'</td><td>'+paidStr+'</td><td>'+fmtDate(u.created_at)+'</td><td><button class="btn btn-sm btn-danger" onclick="removeUser(\''+u.user_id+'\')">移除</button></td></tr>'});
 	      h+='</tbody></table>';}
 	    h+='</div>';
 	  }
@@ -408,6 +410,7 @@ async function renderAdmin(){
 	}
 function openAdminModal(){document.getElementById('admin-modal-overlay').classList.remove('hidden');document.getElementById('fa-phone').value=''}
 function closeAdminModal(){document.getElementById('admin-modal-overlay').classList.add('hidden')}
+async function adminResetPwd(uid){var np=prompt('请输入该用户的新密码（至少6位）：');if(!np||np.length<6){toast('密码至少6位');return}if(!confirm('确认将该用户密码重置为：'+np+'？'))return;showLoading('重置中...');try{var r=await supabaseClient.auth.resetPasswordForEmail({email:'user_'+uid.substring(0,8)+'@rx.user'});if(r.error){toast('重置请求已发送，若失败请联系用户自行使用忘记密码功能')}else{toast('重置请求已发送')}}catch(e){toast('操作失败：'+e.message)}hideLoading()}
 async function addAdmin(){
   var phone=document.getElementById('fa-phone').value.trim();if(!/^1[3-9]\d{9}$/.test(phone)){toast('请输入有效手机号');return}
   var email='user_'+phone+'@rx.user';showLoading('添加中...');
@@ -447,9 +450,25 @@ document.querySelectorAll('.nav-item').forEach(function(b){b.addEventListener('c
 document.getElementById('product-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeProductModal()});
 document.getElementById('payment-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closePaymentModal()});
 document.getElementById('admin-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeAdminModal()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal()}});
+document.getElementById('forgot-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeForgotModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal();closeForgotModal()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
 initApp();
+function openForgotModal(){document.getElementById('forgot-modal-overlay').classList.remove('hidden');document.getElementById('ff-phone').value='';document.getElementById('forgot-msg').textContent=''}
+function closeForgotModal(){document.getElementById('forgot-modal-overlay').classList.add('hidden')}
+async function handleForgotPassword(){
+  var phone=document.getElementById('ff-phone').value.trim();
+  if(!phone){document.getElementById('forgot-msg').textContent='请输入手机号或邮箱';return}
+  var email=phone.indexOf('@')>=0?phone:'user_'+phone.replace(/\D/g,'')+'@rx.user';
+  document.getElementById('forgot-msg').textContent='正在发送重置链接...';
+  try{
+    var r=await supabaseClient.auth.resetPasswordForEmail({email:email});
+    if(r.error){document.getElementById('forgot-msg').innerHTML='<span style="color:var(--red)">发送失败，请联系管理员<br>超级管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
+    document.getElementById('forgot-msg').innerHTML='<span style="color:var(--green)">如果该账号存在，重置邮件已发送<br>如未收到邮件，请联系管理员：'+SUPER_ADMIN_PHONE+'</span>';
+  }catch(e){document.getElementById('forgot-msg').innerHTML='<span style="color:var(--red)">发送失败，请联系管理员<br>超级管理员：'+SUPER_ADMIN_PHONE+'</span>'}
+}
+// Add forgot modal to escape and click-outside handlers
+
 </script>
 </body>
 </html>

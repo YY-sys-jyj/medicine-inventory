@@ -170,7 +170,9 @@ tr:hover td{background:#fafbfc}
 </div>
 <div class="modal-overlay hidden" id="product-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="product-modal-title">新增品种</h3><button class="modal-close" onclick="closeProductModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">品种名称</label><input class="form-input" id="f-name" placeholder="阿莫西林胶囊"></div><div class="form-group"><label class="form-label">批号</label><input class="form-input" id="f-batch" placeholder="20250601A"></div><div class="form-row"><div class="form-group"><label class="form-label">有效期至</label><input class="form-input" type="date" id="f-expiry"></div><div class="form-group"><label class="form-label">库存量</label><input class="form-input" type="number" id="f-stock" min="0" placeholder="0"></div></div><div class="form-group"><label class="form-label">最近一个月销量</label><input class="form-input" type="number" id="f-sales" min="0" placeholder="0"></div><input type="hidden" id="f-id"></div><div class="modal-foot"><button class="btn" onclick="closeProductModal()">取消</button><button class="btn btn-primary" onclick="saveProduct()">保存</button></div></div></div>
 <div class="modal-overlay hidden" id="payment-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="payment-modal-title">新增医院</h3><button class="modal-close" onclick="closePaymentModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">医院名称</label><input class="form-input" id="fp-hospital" placeholder="XX市人民医院"></div><div class="form-row"><div class="form-group"><label class="form-label">付款周期</label><select class="form-input" id="fp-cycle"><option value="每月">每月</option><option value="每季度" selected>每季度</option><option value="每半年">每半年</option><option value="每年">每年</option><option value="不定期">不定期</option></select></div><div class="form-group"><label class="form-label">下次回款日期</label><input class="form-input" type="date" id="fp-date"></div></div><div class="form-group"><label class="form-label">预计回款金额</label><input class="form-input" type="number" id="fp-amount" min="0" placeholder="0"></div><div class="form-group"><label class="form-label">付款流程说明</label><textarea class="form-textarea" id="fp-process" placeholder="药剂科提交→院长审批→财务付款"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">关键联系人</label><input class="form-input" id="fp-contact" placeholder="姓名"></div><div class="form-group"><label class="form-label">职务</label><input class="form-input" id="fp-role" placeholder="采购办主任"></div></div><div class="form-group"><label class="form-label">联系电话</label><input class="form-input" id="fp-phone" placeholder="手机或座机"></div><div class="form-group"><label class="form-label">备注</label><input class="form-input" id="fp-notes" placeholder="其他信息"></div><input type="hidden" id="fp-id"></div><div class="modal-foot"><button class="btn" onclick="closePaymentModal()">取消</button><button class="btn btn-primary" onclick="savePayment()">保存</button></div></div></div>
-<div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div><div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">请输入绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" onclick="handleForgotPassword()">发送重置链接</button></div></div></div>
+<div class="modal-overlay hidden" id="admin-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="admin-modal-title">添加管理员</h3><button class="modal-close" onclick="closeAdminModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="fa-phone" placeholder="输入要添加的管理员手机号"></div></div><div class="modal-foot"><button class="btn" onclick="closeAdminModal()">取消</button><button class="btn btn-primary" onclick="addAdmin()">添加</button></div></div></div>
+<div class="modal-overlay hidden" id="pay-modal-overlay"><div class="modal"><div class="modal-head"><h3>续费订阅 ¥2/月</h3><button class="modal-close" onclick="closePayModal()">✕</button></div><div class="modal-body"><p style="font-size:13px;color:var(--text2);margin-bottom:12px">请扫描下方收款码支付 <b style="color:var(--accent)">¥2.00</b>，并在转账备注中填写您的手机号</p><div id="pay-qr" style="text-align:center;margin-bottom:12px"></div><div class="form-group"><label class="form-label">转账单号 / 交易流水号</label><input class="form-input" id="pay-ref" placeholder="输入微信/支付宝交易单号后4位或备注信息"></div><div id="pay-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closePayModal()">取消</button><button class="btn btn-primary" onclick="submitPayment()">确认已付款</button></div></div></div>
+<div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">请输入绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" onclick="handleForgotPassword()">发送重置链接</button></div></div></div>
 <script src="supabase.js"></script>
 
 
@@ -254,11 +256,24 @@ async function updateTrialBanner(){
   banner.className='trial-banner expired';banner.classList.remove('hidden');btn.classList.remove('hidden');
   if(sidebarStatus){sidebarStatus.style.display='block';sidebarStatus.innerHTML='<span style="color:var(--red)">🔴 试用已到期</span><br><span style="font-size:10px">付费 ¥2/月即可继续使用<br>数据不会丢失</span>';}
 }
-function handlePayment(){
-  if(!confirm('确认续费 ¥2/月？\n\n（演示模式：点击确认即完成续费）'))return;
-  showLoading('处理中...');var paidUntil=new Date(Date.now()+30*24*60*60*1000).toISOString();
-  supabaseClient.from('user_roles').update({paid_until:paidUntil}).eq('user_id',currentUser.id).then(function(){updateTrialBanner();hideLoading();toast('续费成功！有效期延长30天')});
+var PAYMENT_QR_URL='';function handlePayment(){
+  document.getElementById('pay-modal-overlay').classList.remove('hidden');
+  var qrEl=document.getElementById('pay-qr');
+  if(PAYMENT_QR_URL){qrEl.innerHTML='<img src="'+PAYMENT_QR_URL+'" style="max-width:200px;border-radius:8px" alt="收款码">'}else{qrEl.innerHTML='<div style="padding:30px;background:#f0fdf4;border-radius:8px;text-align:center;color:var(--green);font-size:13px">请管理员设置收款码图片URL<br>联系管理员：'+SUPER_ADMIN_PHONE+'</div>'}
+  document.getElementById('pay-ref').value='';
+  document.getElementById('pay-msg').textContent='';
 }
+function closePayModal(){document.getElementById('pay-modal-overlay').classList.add('hidden')}
+async function submitPayment(){
+  var ref=document.getElementById('pay-ref').value.trim();
+  if(!ref){document.getElementById('pay-msg').textContent='请输入转账单号或备注信息';return}
+  document.getElementById('pay-msg').textContent='提交中...';
+  var r=await supabaseClient.from('payment_requests').insert({user_id:currentUser.id,amount:200,payment_ref:ref,status:'pending'});
+  if(r.error){document.getElementById('pay-msg').innerHTML='<span style="color:var(--red)">提交失败，请稍后重试</span>';return}
+  document.getElementById('pay-msg').innerHTML='<span style="color:var(--green)">\u2705 付款申请已提交，请等待管理员审核</span>';
+  setTimeout(function(){closePayModal();toast('付款申请已提交，等待管理员审核')},2000);
+}
+
 async function handleLogin(){
   var phone=document.getElementById('login-phone').value.trim(),pw=document.getElementById('login-password').value;
   var err=document.getElementById('login-error'),btn=document.getElementById('login-btn');err.textContent='';
@@ -406,8 +421,16 @@ async function renderAdmin(){
 	      h+='</tbody></table>';}
 	    h+='</div>';
 	  }
-	  c.innerHTML=h||'<div class="empty-state"><p>无管理权限</p></div>';
-	}
+  try{var pr=await supabaseClient.from('payment_requests').select('*').eq('status','pending').order('created_at',{ascending:false});
+  h+='<div class="admin-section" style="margin-top:24px"><h3>待审核付款（'+(pr.data?pr.data.length:0)+'笔）</h3>';
+  if(pr.data&&pr.data.length){
+    h+='<table><thead><tr><th>用户ID</th><th>金额</th><th>付款单号</th><th>申请时间</th><th>操作</th></tr></thead><tbody>';
+    pr.data.forEach(function(pp){h+='<tr><td><code>'+esc((pp.user_id||'').substring(0,10))+'...</code></td><td>¥'+(pp.amount/100).toFixed(2)+'</td><td>'+esc(pp.payment_ref||'-')+'</td><td>'+fmtDate(pp.created_at)+'</td><td><button class="btn btn-sm btn-primary" onclick="approvePayment('+pp.id+',\''+pp.user_id+'\')">通过</button> <button class="btn btn-sm btn-danger" onclick="rejectPayment('+pp.id+')">拒绝</button></td></tr>'});
+    h+='</tbody></table>';
+  }else{h+='<p style="font-size:12px;color:var(--text3)">暂无待审核付款</p>'}
+  h+='</div>';}catch(e){}
+		  c.innerHTML=h||'<div class="empty-state"><p>无管理权限</p></div>';
+		}
 function openAdminModal(){document.getElementById('admin-modal-overlay').classList.remove('hidden');document.getElementById('fa-phone').value=''}
 function closeAdminModal(){document.getElementById('admin-modal-overlay').classList.add('hidden')}
 async function adminResetPwd(uid){var np=prompt('请输入该用户的新密码（至少6位）：');if(!np||np.length<6){toast('密码至少6位');return}if(!confirm('确认将该用户密码重置为：'+np+'？'))return;showLoading('重置中...');try{var r=await supabaseClient.auth.resetPasswordForEmail({email:'user_'+uid.substring(0,8)+'@rx.user'});if(r.error){toast('重置请求已发送，若失败请联系用户自行使用忘记密码功能')}else{toast('重置请求已发送')}}catch(e){toast('操作失败：'+e.message)}hideLoading()}
@@ -451,7 +474,8 @@ document.getElementById('product-modal-overlay').addEventListener('click',functi
 document.getElementById('payment-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closePaymentModal()});
 document.getElementById('admin-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeAdminModal()});
 document.getElementById('forgot-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeForgotModal()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal();closeForgotModal()}});
+document.getElementById('pay-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closePayModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal();closeForgotModal();closePayModal()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
 initApp();
 function openForgotModal(){document.getElementById('forgot-modal-overlay').classList.remove('hidden');document.getElementById('ff-phone').value='';document.getElementById('forgot-msg').textContent=''}
@@ -468,6 +492,9 @@ async function handleForgotPassword(){
   }catch(e){document.getElementById('forgot-msg').innerHTML='<span style="color:var(--red)">发送失败，请联系管理员<br>超级管理员：'+SUPER_ADMIN_PHONE+'</span>'}
 }
 // Add forgot modal to escape and click-outside handlers
+
+async function approvePayment(pid,uid){if(!confirm('确认通过该付款申请？'))return;showLoading('...');var paidUntil=new Date(Date.now()+30*24*60*60*1000).toISOString();await supabaseClient.from('payment_requests').update({status:'approved',processed_at:new Date().toISOString()}).eq('id',pid);await supabaseClient.from('user_roles').update({paid_until:paidUntil}).eq('user_id',uid);hideLoading();renderAdmin();updateTrialBanner();toast('已通过，用户续费30天')}
+async function rejectPayment(pid){if(!confirm('确认拒绝该付款申请？'))return;showLoading('...');await supabaseClient.from('payment_requests').update({status:'rejected',processed_at:new Date().toISOString()}).eq('id',pid);hideLoading();renderAdmin();toast('已拒绝')}
 
 </script>
 </body>

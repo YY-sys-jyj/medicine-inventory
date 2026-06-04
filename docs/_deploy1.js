@@ -1,3 +1,0 @@
-(function(){var d=document.getElementById("debug-status");if(d){d.textContent="window.supabase="+(typeof window.supabase)+"  supabase="+(typeof supabaseClient)+"  URL="+window.location.href;}})();
-var
-...

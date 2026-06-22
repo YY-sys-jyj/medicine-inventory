@@ -179,7 +179,7 @@ tr:hover td{background:#fafbfc}
     <div class="panel hidden" id="panel-warnings"><div class="panel-head"><h2>效期预警看板</h2><button class="btn btn-sm" onclick="exportWarningsCSV()">导出Excel</button></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索预警药品..." id="search-warnings" oninput="renderWarnings()"></div><div id="warnings-content"></div></div></div>
     <div class="panel hidden" id="panel-report"><div class="panel-head"><h2>库存动销报告</h2><div class="btn-group"><button class="btn btn-sm" onclick="window.print()">打印</button><button class="btn btn-sm" onclick="exportReportCSV()">导出Excel</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索报告药品..." id="search-report" oninput="renderReport()"></div><div id="report-content"></div></div></div>
     <div class="panel hidden" id="panel-payment"><div class="panel-head"><h2>医院回款台账</h2><div class="btn-group"><button class="btn btn-sm btn-danger hidden" id="btn-batch-del-pay" onclick="batchDeletePayments()">🗑 批量删除</button><button class="btn btn-sm" onclick="downloadTemplate('payment')">📥 模板</button><label class="btn btn-sm" style="cursor:pointer">📤 导入医院<input type="file" accept=".xlsx,.xls,.csv" onchange="importPayments(this)" style="display:none"></label><button class="btn btn-primary btn-sm" onclick="openPaymentModal()">+ 新增医院</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索医院名称..." id="search-payment" oninput="renderPayments()"><select class="filter-select" id="filter-pay-status" onchange="renderPayments()"><option value="all">全部状态</option><option value="due">⚠ 即将到期</option><option value="upcoming">待回款</option><option value="paid">已回款</option></select></div><div id="payment-content"></div></div></div>
-    <div class="panel hidden" id="panel-notifications"><div class="panel-head"><h2>通知中心</h2><div class="btn-group"><button class="btn btn-sm" onclick="generateReminderNotifications(false)">生成提醒</button><button class="btn btn-sm" onclick="markAllNotificationsRead()">全部已读</button><button class="btn btn-sm" onclick="renderNotifications()">刷新</button></div></div><div class="panel-body"><div id="notification-admin-box"></div><div id="notifications-content"></div></div></div>
+    <div class="panel hidden" id="panel-notifications"><div class="panel-head"><h2>通知中心</h2><div class="btn-group"><button class="btn btn-sm" onclick="generateReminderNotifications(false)">生成提醒</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">推送微信</button><button class="btn btn-sm" onclick="markAllNotificationsRead()">全部已读</button><button class="btn btn-sm" onclick="renderNotifications()">刷新</button></div></div><div class="panel-body"><div id="wechat-bind-box"></div><div id="notification-admin-box"></div><div id="notifications-content"></div></div></div>
     <div class="panel hidden" id="panel-logs"><div class="panel-head"><h2>出入库日志</h2><div class="btn-group"><button class="btn btn-sm" onclick="backfillImportLogs()">补写导入日志</button><button class="btn btn-sm" onclick="backfillPaymentLogs()">补写医院日志</button><button class="btn btn-sm" onclick="renderLogs()">刷新</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索日志药品..." id="search-logs" oninput="renderLogs()"></div><div id="logs-content"></div></div></div>
 	    <div class="panel hidden" id="panel-admin"><div class="panel-head"><h2>系统管理</h2></div><div class="panel-body" id="admin-content"></div></div>
   </main>
@@ -201,7 +201,7 @@ var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>
 var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
-var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],activeTab='ledger';
+var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,activeTab='ledger';
 var _lastLoginAttempt=0,_cooldownInterval=null;
 var _idleTimeout=30*60*1000,_idleWarningAt=29*60*1000,_idleTimer=null,_idleWarningTimer=null,_idleWarningShown=false;
 var GRACE_DAYS=3,accessInfo={state:'active',canRead:true,canWrite:true};
@@ -412,7 +412,7 @@ async function handleLogout(){
   clearIdleTimers();_lastLoginAttempt=0;
   var sb=document.getElementById('pw-strength-bar');if(sb)sb.style.display='none';
   if(supabaseClient)await supabaseClient.auth.signOut();
-  currentUser=null;userRole=null;products=[];payments=[];notifications=[];announcements=[];
+  currentUser=null;userRole=null;products=[];payments=[];notifications=[];announcements=[];wechatBinding=null;
   document.getElementById('app-container').classList.add('hidden');document.getElementById('login-page').classList.remove('hidden');
   document.getElementById('login-password').value='';document.getElementById('login-btn').innerHTML='登 录';document.getElementById('login-btn').disabled=false;
   var items=document.querySelectorAll('.admin-only');for(var i=0;i<items.length;i++)items[i].style.display='none';
@@ -491,10 +491,44 @@ async function generateReminderNotifications(silent){
 async function updateNotificationBadge(){
   var b=document.getElementById('nav-notify-badge');if(!b)return;
   if(!supabaseClient||!currentUser){b.classList.add('hidden');return}
-  var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').select('id',{count:'exact',head:true}).eq('user_id',currentUser.id).is('read_at',null)});
-  var count=r&&r.count?r.count:0;if(r.error)count=0;
+  var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').select('id,read_at').eq('user_id',currentUser.id)});
+  var count=r&&r.data?((r.data||[]).filter(function(n){return!n.read_at}).length):0;if(r.error)count=0;
   if(count>0){b.textContent=count;b.classList.remove('hidden')}else b.classList.add('hidden');
 }
+async function loadWechatBinding(){
+  if(!supabaseClient||!currentUser)return null;
+  var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').select('*').eq('user_id',currentUser.id).maybeSingle()});
+  wechatBinding=r.data||null;return r;
+}
+async function renderWechatBindBox(){
+  var box=document.getElementById('wechat-bind-box');if(!box)return;
+  var r=await loadWechatBinding(),uid=wechatBinding&&wechatBinding.wxpusher_uid?wechatBinding.wxpusher_uid:'';
+  var err=r&&r.error?'<div class="readonly-note">微信绑定表未创建，请先执行 WxPusher SQL。</div>':'';
+  box.innerHTML=err+'<div class="admin-section" style="margin-bottom:18px"><h3>微信提醒绑定</h3><div class="form-row"><div class="form-group"><label class="form-label">WxPusher UID</label><input class="form-input" id="wxpusher-uid" placeholder="例如 UID_xxxxx" value="'+esc(uid)+'"></div><div class="form-group"><label class="form-label">状态</label><select class="form-input" id="wxpusher-enabled"><option value="true" '+(!wechatBinding||wechatBinding.enabled!==false?'selected':'')+'>开启微信提醒</option><option value="false" '+(wechatBinding&&wechatBinding.enabled===false?'selected':'')+'>暂停微信提醒</option></select></div></div><div class="btn-group"><button class="btn btn-primary btn-sm" onclick="saveWechatBinding()">保存绑定</button><button class="btn btn-sm" onclick="sendWechatTest()">发送测试</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">推送未发提醒</button></div><p style="font-size:12px;color:var(--text3);margin-top:8px">用户关注 WxPusher 应用后，会收到自己的 UID，把 UID 填到这里即可接收微信提醒。</p></div>';
+}
+async function saveWechatBinding(){
+  if(!currentUser)return;
+  var uidv=(document.getElementById('wxpusher-uid').value||'').trim(),enabled=document.getElementById('wxpusher-enabled').value==='true';
+  if(!uidv)return toast('请填写 WxPusher UID');
+  showLoading('保存微信绑定...');
+  var row={user_id:currentUser.id,wxpusher_uid:uidv,enabled:enabled,updated_at:new Date().toISOString()};
+  var r;if(wechatBinding)r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});else r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').insert(row)});
+  hideLoading();if(r.error)return toast('保存失败：'+(r.error.message||JSON.stringify(r.error))+'，请先执行 WxPusher SQL');
+  await renderWechatBindBox();toast('微信绑定已保存');
+}
+async function callWxPusherFunction(action,payload){
+  var gs=await supabaseClient.auth.getSession(),token=gs.data&&gs.data.session&&gs.data.session.access_token;
+  if(!token)return{error:'登录已过期，请重新登录'};
+  try{
+    var res=await fetch(SUPABASE_URL+'/functions/v1/wxpusher',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(Object.assign({action:action},payload||{}))});
+    var data=await res.json().catch(function(){return{}});
+    if(!res.ok||data.error)return{error:data.error||('HTTP '+res.status)};
+    return{data:data};
+  }catch(e){return{error:e.message||'请求失败'}}
+}
+async function sendWechatTest(){var r=await callWxPusherFunction('send-test',{});toast(r.error?'测试失败：'+r.error:'测试消息已发送')}
+async function pushNotificationToWechat(id){var r=await callWxPusherFunction('send-notification',{notification_id:id});if(r.error)toast('推送失败：'+r.error);else{toast('已推送到微信');renderNotifications()}}
+async function pushMyRemindersToWechat(){var r=await callWxPusherFunction('push-my-reminders',{});if(r.error)toast('推送失败：'+r.error);else{toast('微信推送完成：成功 '+(r.data.sent||0)+' 条，失败 '+(r.data.failed||0)+' 条');renderNotifications()}}
 function renderNotificationAdminBox(){
   var b=document.getElementById('notification-admin-box');if(!b)return;
   if(!isAdminRole()){b.innerHTML='';return}
@@ -502,6 +536,7 @@ function renderNotificationAdminBox(){
 }
 async function renderNotifications(){
   if(accessInfo&&accessInfo.state==='locked'){renderLockedAccess();return}
+  await renderWechatBindBox();
   renderNotificationAdminBox();
   var c=document.getElementById('notifications-content');c.innerHTML='<div class="loading-spinner"></div>';
   if(!await requireActiveSession()){c.innerHTML='<div class="empty-state"><p>登录已过期，请重新登录</p></div>';return}
@@ -516,17 +551,18 @@ async function renderNotifications(){
   h+='</div><div class="report-section"><h3>业务提醒</h3>';
   if(nr.error)h+='<div class="empty-state"><p>提醒读取失败：'+esc(nr.error.message||JSON.stringify(nr.error))+'。请先执行通知中心 SQL。</p></div>';
   else if(!notifications.length)h+='<div class="empty-state"><p>暂无提醒，可点击“生成提醒”检查药品和医院回款。</p></div>';
-  else h+='<table><thead><tr><th>时间</th><th>级别</th><th>标题</th><th>内容</th><th>状态</th><th>操作</th></tr></thead><tbody>'+notifications.map(function(n){return'<tr><td>'+fmtDate(n.created_at)+'</td><td><span class="badge '+notificationBadgeClass(n.severity)+'">'+esc(n.severity||'info')+'</span></td><td><strong>'+esc(n.title||'')+'</strong></td><td>'+esc(n.content||'')+'</td><td>'+(n.read_at?'<span class="badge badge-green">已读</span>':'<span class="badge badge-yellow">未读</span>')+'</td><td>'+(n.read_at?'—':'<button class="btn btn-sm" onclick="markNotificationRead('+n.id+')">标记已读</button>')+'</td></tr>'}).join('')+'</tbody></table>';
+  else h+='<table><thead><tr><th>时间</th><th>级别</th><th>标题</th><th>内容</th><th>状态</th><th>操作</th></tr></thead><tbody>'+notifications.map(function(n){var acts=[];if(!n.read_at)acts.push('<button class="btn btn-sm" onclick="markNotificationRead('+n.id+')">标记已读</button>');if(n.wxpusher_sent_at)acts.push('<span class="badge badge-green">已推送</span>');else if(wechatBinding&&wechatBinding.wxpusher_uid)acts.push('<button class="btn btn-sm" onclick="pushNotificationToWechat('+n.id+')">发微信</button>');return'<tr><td>'+fmtDate(n.created_at)+'</td><td><span class="badge '+notificationBadgeClass(n.severity)+'">'+esc(n.severity||'info')+'</span></td><td><strong>'+esc(n.title||'')+'</strong></td><td>'+esc(n.content||'')+'</td><td>'+(n.read_at?'<span class="badge badge-green">已读</span>':'<span class="badge badge-yellow">未读</span>')+'</td><td><div class="btn-group">'+(acts.join('')||'—')+'</div></td></tr>'}).join('')+'</tbody></table>';
   h+='</div>';c.innerHTML=h;await updateNotificationBadge();
 }
 async function markNotificationRead(id){var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id)});if(r.error)toast('操作失败：'+(r.error.message||JSON.stringify(r.error)));else renderNotifications()}
-async function markAllNotificationsRead(){var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('user_id',currentUser.id).is('read_at',null)});if(r.error)toast('操作失败：'+(r.error.message||JSON.stringify(r.error)));else{toast('已全部标记为已读');renderNotifications()}}
+async function markAllNotificationsRead(){var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('user_id',currentUser.id)});if(r.error)toast('操作失败：'+(r.error.message||JSON.stringify(r.error)));else{toast('已全部标记为已读');renderNotifications()}}
 async function publishAnnouncement(){
   if(!isAdminRole())return toast('只有管理员可以发布通知');
   var title=document.getElementById('ann-title').value.trim(),content=document.getElementById('ann-content').value.trim(),target=document.getElementById('ann-target').value;
   if(!title||!content)return toast('请填写标题和内容');
   var r=await runAuthQuery(function(){return supabaseClient.from('system_announcements').insert({title:title,content:content,target_role:target,created_by:currentUser.id})});
   if(r.error)return toast('发布失败：'+(r.error.message||JSON.stringify(r.error))+'，请先执行通知中心 SQL');
+  var id=r.data&&r.data[0]&&r.data[0].id;if(id)callWxPusherFunction('broadcast-announcement',{announcement_id:id}).catch(function(){});
   document.getElementById('ann-title').value='';document.getElementById('ann-content').value='';toast('通知已发布');renderNotifications();
 }
 function renderStats(){

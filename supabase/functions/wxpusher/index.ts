@@ -175,9 +175,21 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  let serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!serviceKey) {
+    try {
+      const secretKeys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}");
+      serviceKey = secretKeys.default || Object.values(secretKeys)[0] || "";
+    } catch (_) {
+      serviceKey = "";
+    }
+  }
   const appToken = Deno.env.get("WXPUSHER_APP_TOKEN") || "";
-  if (!supabaseUrl || !serviceKey || !appToken) return json({ error: "Edge Function 环境变量未配置完整" }, 500);
+  const missing = [];
+  if (!supabaseUrl) missing.push("SUPABASE_URL");
+  if (!serviceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY 或 SUPABASE_SECRET_KEYS");
+  if (!appToken) missing.push("WXPUSHER_APP_TOKEN");
+  if (missing.length) return json({ error: `Edge Function 环境变量缺少：${missing.join("、")}` }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey);
   const body = await req.json().catch(() => ({}));

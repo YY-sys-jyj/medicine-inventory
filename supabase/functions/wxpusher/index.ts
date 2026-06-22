@@ -65,6 +65,24 @@ async function sendWx(appToken: string, uid: string, title: string, content: str
   return data;
 }
 
+async function sendPushPlus(token: string, title: string, content: string) {
+  const res = await fetch("https://www.pushplus.plus/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      token,
+      title: title.slice(0, 100),
+      content: `${title}\n\n${content}`,
+      template: "txt",
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.code !== 200) {
+    throw new Error(data.msg || data.message || `PushPlus HTTP ${res.status}`);
+  }
+  return data;
+}
+
 async function authedUser(req: Request, admin: any) {
   const auth = req.headers.get("Authorization") || "";
   const jwt = auth.replace(/^Bearer\s+/i, "");
@@ -80,41 +98,57 @@ async function userRole(admin: any, userId: string) {
 }
 
 async function bindingFor(admin: any, userId: string) {
-  const { data } = await admin.from("wechat_bindings").select("*").eq("user_id", userId).eq("enabled", true).maybeSingle();
+  const { data } = await admin.from("wechat_bindings").select("*").eq("user_id", userId).maybeSingle();
   return data;
 }
 
 async function sendOneNotification(admin: any, appToken: string, notification: any, binding: any) {
-  try {
+  let sent = 0;
+  let failed = 0;
+  const patch: Record<string, string | null> = {};
+  if (binding.enabled !== false && binding.wxpusher_uid && !notification.wxpusher_sent_at) try {
     await sendWx(appToken, binding.wxpusher_uid, notification.title || "系统提醒", notification.content || "");
-    await admin.from("notification_events").update({
-      wxpusher_sent_at: new Date().toISOString(),
-      wxpusher_error: null,
-    }).eq("id", notification.id);
-    return { ok: true };
+    patch.wxpusher_sent_at = new Date().toISOString();
+    patch.wxpusher_error = null;
+    sent++;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await admin.from("notification_events").update({ wxpusher_error: message }).eq("id", notification.id);
-    return { ok: false, error: message };
+    patch.wxpusher_error = message;
+    failed++;
   }
+  if (binding.pushplus_enabled && binding.pushplus_token && !notification.pushplus_sent_at) try {
+    await sendPushPlus(binding.pushplus_token, notification.title || "系统提醒", notification.content || "");
+    patch.pushplus_sent_at = new Date().toISOString();
+    patch.pushplus_error = null;
+    sent++;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    patch.pushplus_error = message;
+    failed++;
+  }
+  if (Object.keys(patch).length) await admin.from("notification_events").update(patch).eq("id", notification.id);
+  return { ok: sent > 0, sent, failed };
 }
 
 async function pushUserReminders(admin: any, appToken: string, userId: string, limit = 20) {
   const binding = await bindingFor(admin, userId);
-  if (!binding) throw new Error("请先在通知中心绑定 WxPusher UID");
+  if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) throw new Error("请先在通知中心绑定推送通道");
   const { data, error } = await admin.from("notification_events")
     .select("*")
     .eq("user_id", userId)
-    .is("wxpusher_sent_at", null)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit * 2);
   if (error) throw new Error(error.message);
   let sent = 0;
   let failed = 0;
-  for (const n of data || []) {
+  const pending = (data || []).filter((n: any) =>
+    (binding.enabled !== false && binding.wxpusher_uid && !n.wxpusher_sent_at) ||
+    (binding.pushplus_enabled && binding.pushplus_token && !n.pushplus_sent_at)
+  ).slice(0, limit);
+  for (const n of pending) {
     const r = await sendOneNotification(admin, appToken, n, binding);
-    if (r.ok) sent++;
-    else failed++;
+    sent += r.sent || 0;
+    failed += r.failed || 0;
   }
   return { sent, failed };
 }
@@ -205,7 +239,7 @@ Deno.serve(async (req) => {
       let failed = 0;
       for (const userId of built.userIds) {
         const binding = await bindingFor(admin, userId);
-        if (!binding) continue;
+        if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) continue;
         const r = await pushUserReminders(admin, appToken, userId, 20);
         sent += r.sent;
         failed += r.failed;
@@ -219,20 +253,34 @@ Deno.serve(async (req) => {
 
     if (action === "send-test") {
       const binding = await bindingFor(admin, user.id);
-      if (!binding) return json({ error: "请先在通知中心绑定 WxPusher UID" }, 400);
-      await sendWx(appToken, binding.wxpusher_uid, "微信提醒测试", "这是一条来自医药库存动销管理系统的测试提醒。");
-      return json({ ok: true });
+      if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
+      let sent = 0;
+      let failed = 0;
+      if (binding.enabled !== false && binding.wxpusher_uid) try {
+        await sendWx(appToken, binding.wxpusher_uid, "微信提醒测试", "这是一条来自医药库存动销管理系统的 WxPusher 测试提醒。");
+        sent++;
+      } catch (_) {
+        failed++;
+      }
+      if (binding.pushplus_enabled && binding.pushplus_token) try {
+        await sendPushPlus(binding.pushplus_token, "微信提醒测试", "这是一条来自医药库存动销管理系统的 PushPlus 测试提醒。");
+        sent++;
+      } catch (_) {
+        failed++;
+      }
+      if (!sent) return json({ error: "没有可用推送通道，请检查 UID/Token 和启用状态" }, 400);
+      return json({ ok: true, sent, failed });
     }
 
     if (action === "send-notification") {
       const id = Number(body.notification_id);
       const binding = await bindingFor(admin, user.id);
-      if (!binding) return json({ error: "请先在通知中心绑定 WxPusher UID" }, 400);
+      if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
       const { data: n, error } = await admin.from("notification_events").select("*").eq("id", id).eq("user_id", user.id).maybeSingle();
       if (error || !n) return json({ error: "未找到提醒" }, 404);
       const r = await sendOneNotification(admin, appToken, n, binding);
       if (!r.ok) return json({ error: r.error || "推送失败" }, 500);
-      return json({ ok: true });
+      return json({ ok: true, sent: r.sent, failed: r.failed });
     }
 
     if (action === "push-my-reminders") {
@@ -245,7 +293,7 @@ Deno.serve(async (req) => {
       const id = Number(body.announcement_id);
       const { data: announcement } = await admin.from("system_announcements").select("*").eq("id", id).maybeSingle();
       if (!announcement) return json({ error: "未找到系统更新" }, 404);
-      const { data: bindings } = await admin.from("wechat_bindings").select("*").eq("enabled", true);
+      const { data: bindings } = await admin.from("wechat_bindings").select("*");
       const { data: roles } = await admin.from("user_roles").select("user_id,role,trial_ends_at,paid_until");
       const roleMap = new Map((roles || []).map((r: any) => [r.user_id, r]));
       let sent = 0;
@@ -256,8 +304,14 @@ Deno.serve(async (req) => {
         const target = announcement.target_role || "all";
         const matched = target === "all" || target === targetRole.role || (target === "admin" && ["admin", "super_admin"].includes(targetRole.role));
         if (!matched) continue;
-        try {
+        if (b.enabled !== false && b.wxpusher_uid) try {
           await sendWx(appToken, b.wxpusher_uid, announcement.title, announcement.content);
+          sent++;
+        } catch (_) {
+          failed++;
+        }
+        if (b.pushplus_enabled && b.pushplus_token) try {
+          await sendPushPlus(b.pushplus_token, announcement.title, announcement.content);
           sent++;
         } catch (_) {
           failed++;

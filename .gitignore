@@ -12,3 +12,6 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Supabase CLI local state
+supabase/.temp/

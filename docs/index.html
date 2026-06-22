@@ -509,7 +509,14 @@ async function saveWechatBinding(){
   if(!uidv)return toast('请填写 WxPusher UID');
   showLoading('保存微信绑定...');
   var row={user_id:currentUser.id,wxpusher_uid:uidv,enabled:enabled,updated_at:new Date().toISOString()};
-  var r;if(wechatBinding)r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});else r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').insert(row)});
+  var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});
+  if(!r.error){await loadWechatBinding()}
+  if(!wechatBinding){
+    r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').insert(row)});
+    if(r.error&&(r.error.status===409||String(r.error.message||'').indexOf('duplicate key')>=0)){
+      r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});
+    }
+  }
   hideLoading();if(r.error)return toast('保存失败：'+(r.error.message||JSON.stringify(r.error))+'，请先执行 WxPusher SQL');
   await renderWechatBindBox();toast('微信绑定已保存');
 }

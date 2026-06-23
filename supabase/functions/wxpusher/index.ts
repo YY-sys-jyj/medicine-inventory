@@ -203,7 +203,7 @@ function pushplusReceiver(binding: any) {
 
 function hasPushChannel(binding: any) {
   return !!(
-    (binding?.enabled !== false && binding?.wxpusher_uid) ||
+    (binding?.enabled === true && binding?.wxpusher_uid) ||
     (binding?.pushplus_enabled && pushplusReceiver(binding))
   );
 }
@@ -212,7 +212,7 @@ async function sendOneNotification(admin: any, appToken: string, pushplusToken: 
   let sent = 0;
   let failed = 0;
   const patch: Record<string, string | null> = {};
-  if (binding.enabled !== false && binding.wxpusher_uid && !notification.wxpusher_sent_at) try {
+  if (binding.enabled === true && binding.wxpusher_uid && !notification.wxpusher_sent_at) try {
     if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
     await sendWx(appToken, binding.wxpusher_uid, notification.title || "系统提醒", notification.content || "");
     patch.wxpusher_sent_at = new Date().toISOString();
@@ -251,7 +251,7 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
   let sent = 0;
   let failed = 0;
   const pending = (data || []).filter((n: any) =>
-    (binding.enabled !== false && binding.wxpusher_uid && !n.wxpusher_sent_at) ||
+    (binding.enabled === true && binding.wxpusher_uid && !n.wxpusher_sent_at) ||
     (binding.pushplus_enabled && pushplusReceiver(binding) && !n.pushplus_sent_at)
   ).slice(0, limit);
   for (const n of pending) {
@@ -400,7 +400,7 @@ Deno.serve(async (req) => {
       if (!hasPushChannel(binding)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
       let sent = 0;
       let failed = 0;
-      if (binding.enabled !== false && binding.wxpusher_uid) try {
+      if (binding.enabled === true && binding.wxpusher_uid) try {
         if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
         await sendWx(appToken, binding.wxpusher_uid, "微信提醒测试", "这是一条来自医药库存动销管理系统的 WxPusher 测试提醒。");
         sent++;
@@ -451,7 +451,7 @@ Deno.serve(async (req) => {
         const target = announcement.target_role || "all";
         const matched = target === "all" || target === targetRole.role || (target === "admin" && ["admin", "super_admin"].includes(targetRole.role));
         if (!matched) continue;
-        if (b.enabled !== false && b.wxpusher_uid) try {
+        if (b.enabled === true && b.wxpusher_uid) try {
           if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
           await sendWx(appToken, b.wxpusher_uid, announcement.title, announcement.content);
           sent++;

@@ -1,4 +1,4 @@
-﻿import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 type JsonMap = Record<string, unknown>;
 
@@ -88,8 +88,8 @@ async function sendPushPlus(systemToken: string, receiver: string, title: string
 }
 
 async function getPushPlusAccessKey(token: string, secretKey: string) {
-  if (!token) throw new Error("PushPlus 绯荤粺鍙戦€?Token 鏈厤缃?);
-  if (!secretKey) throw new Error("PushPlus SecretKey 鏈厤缃紝璇峰湪 Supabase Secrets 娣诲姞 PUSHPLUS_SECRET_KEY");
+  if (!token) throw new Error("PushPlus 系统发送 Token 未配置");
+  if (!secretKey) throw new Error("PushPlus SecretKey 未配置，请在 Supabase Secrets 添加 PUSHPLUS_SECRET_KEY");
   if (pushplusAccessKey && Date.now() < pushplusAccessKeyUntil) return pushplusAccessKey;
   const res = await fetch("https://www.pushplus.plus/api/common/openApi/getAccessKey", {
     method: "POST",
@@ -116,12 +116,11 @@ async function createPushPlusBindQr(admin: any, userId: string, token: string, s
   url.searchParams.set("content", bindCode);
   url.searchParams.set("second", String(seconds));
   url.searchParams.set("scanCount", "999999999");
-  
   const res = await fetch(url.toString(), { headers: { "access-key": accessKey } });
   const data = await res.json().catch(() => ({}));
   const qrCodeImgUrl = data.data?.qrCodeImgUrl || data.data?.qrCode || data.data?.url || "";
   if (!res.ok || data.code !== 200 || !qrCodeImgUrl) {
-    throw new Error(data.msg || data.message || `PushPlus 浜岀淮鐮佺敓鎴愬け璐?HTTP ${res.status}`);
+    throw new Error(data.msg || data.message || `PushPlus 二维码生成失败 HTTP ${res.status}`);
   }
   const expiresAt = new Date(Date.now() + seconds * 1000).toISOString();
   const row = {
@@ -133,7 +132,7 @@ async function createPushPlusBindQr(admin: any, userId: string, token: string, s
     updated_at: new Date().toISOString(),
   };
   const { error } = await admin.from("pushplus_bind_sessions").upsert(row, { onConflict: "bind_code" });
-  if (error) throw new Error(`${error.message}銆傝鍏堟墽琛屾渶鏂?PushPlus SQL`);
+  if (error) throw new Error(`${error.message}。请先执行最新 PushPlus SQL`);
   return { bindCode, qrCodeImgUrl, expiresAt };
 }
 
@@ -182,9 +181,9 @@ async function handlePushPlusCallback(admin: any, payload: any) {
 async function authedUser(req: Request, admin: any) {
   const auth = req.headers.get("Authorization") || "";
   const jwt = auth.replace(/^Bearer\s+/i, "");
-  if (!jwt) throw new Error("缂哄皯鐧诲綍鎺堟潈");
+  if (!jwt) throw new Error("缺少登录授权");
   const { data, error } = await admin.auth.getUser(jwt);
-  if (error || !data?.user) throw new Error("鐧诲綍宸茶繃鏈燂紝璇烽噸鏂扮櫥褰?);
+  if (error || !data?.user) throw new Error("登录已过期，请重新登录");
   return data.user;
 }
 
@@ -214,8 +213,8 @@ async function sendOneNotification(admin: any, appToken: string, pushplusToken: 
   let failed = 0;
   const patch: Record<string, string | null> = {};
   if (binding.enabled !== false && binding.wxpusher_uid && !notification.wxpusher_sent_at) try {
-    if (!appToken) throw new Error("WxPusher 绯荤粺 AppToken 鏈厤缃?);
-    await sendWx(appToken, binding.wxpusher_uid, notification.title || "绯荤粺鎻愰啋", notification.content || "");
+    if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
+    await sendWx(appToken, binding.wxpusher_uid, notification.title || "系统提醒", notification.content || "");
     patch.wxpusher_sent_at = new Date().toISOString();
     patch.wxpusher_error = null;
     sent++;
@@ -226,8 +225,8 @@ async function sendOneNotification(admin: any, appToken: string, pushplusToken: 
   }
   const receiver = pushplusReceiver(binding);
   if (binding.pushplus_enabled && receiver && !notification.pushplus_sent_at) try {
-    if (!pushplusToken) throw new Error("PushPlus 绯荤粺鍙戦€?Token 鏈厤缃?);
-    await sendPushPlus(pushplusToken, receiver, notification.title || "绯荤粺鎻愰啋", notification.content || "");
+    if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
+    await sendPushPlus(pushplusToken, receiver, notification.title || "系统提醒", notification.content || "");
     patch.pushplus_sent_at = new Date().toISOString();
     patch.pushplus_error = null;
     sent++;
@@ -242,7 +241,7 @@ async function sendOneNotification(admin: any, appToken: string, pushplusToken: 
 
 async function pushUserReminders(admin: any, appToken: string, pushplusToken: string, userId: string, limit = 20) {
   const binding = await bindingFor(admin, userId);
-  if (!hasPushChannel(binding)) throw new Error("璇峰厛鍦ㄩ€氱煡涓績缁戝畾鎺ㄩ€侀€氶亾");
+  if (!hasPushChannel(binding)) throw new Error("请先在通知中心绑定推送通道");
   const { data, error } = await admin.from("notification_events")
     .select("*")
     .eq("user_id", userId)
@@ -274,12 +273,12 @@ async function buildDailyNotifications(admin: any) {
     if (!activeUsers.has(p.user_id)) continue;
     const d = daysUntil(p.expiry_date);
     const m = monthsToExpiry(p.expiry_date);
-    const base = `鎵瑰彿 ${p.batch || "-"} / 鏁堟湡 ${fmtDate(p.expiry_date)} / 搴撳瓨 ${p.stock || 0} / 鏈堥攢 ${p.last_month_sales || 0}`;
+    const base = `批号 ${p.batch || "-"} / 效期 ${fmtDate(p.expiry_date)} / 库存 ${p.stock || 0} / 月销 ${p.last_month_sales || 0}`;
     if (m <= 3) rows.push({
       user_id: p.user_id,
       type: "product_red",
       severity: "red",
-      title: `鑽搧绾㈢伅棰勮锛?{p.name || ""}`,
+      title: `药品红灯预警：${p.name || ""}`,
       content: base,
       source_type: "product",
       source_key: p.id,
@@ -289,8 +288,8 @@ async function buildDailyNotifications(admin: any) {
       user_id: p.user_id,
       type: "product_urgent",
       severity: "red",
-      title: `鑽搧3澶╁唴鍒版湡锛?{p.name || ""}`,
-      content: `${base} / 鍓╀綑 ${d} 澶ー,
+      title: `药品3天内到期：${p.name || ""}`,
+      content: `${base} / 剩余 ${d} 天`,
       source_type: "product",
       source_key: p.id,
       dedupe_key: `product:urgent:${p.id}:${nowKey}`,
@@ -303,8 +302,8 @@ async function buildDailyNotifications(admin: any) {
       user_id: p.user_id,
       type: "payment_due",
       severity: d <= 0 ? "red" : "yellow",
-      title: `${d <= 0 ? "鍖婚櫌鍥炴宸插埌鏈? : "鍖婚櫌鍥炴鎻愰啋"}锛?{p.hospital || ""}`,
-      content: `鍥炴鏃?${fmtDate(p.next_date)} / 閲戦 ${Number(p.amount || 0).toLocaleString()} / 鑱旂郴浜?${p.contact || "-"} / 鍓╀綑 ${d} 澶ー,
+      title: `${d <= 0 ? "医院回款已到期" : "医院回款提醒"}：${p.hospital || ""}`,
+      content: `回款日 ${fmtDate(p.next_date)} / 金额 ${Number(p.amount || 0).toLocaleString()} / 联系人 ${p.contact || "-"} / 剩余 ${d} 天`,
       source_type: "payment",
       source_key: p.id,
       dedupe_key: `payment:due:${p.id}:${nowKey}`,
@@ -333,9 +332,9 @@ Deno.serve(async (req) => {
   const pushplusSecretKey = Deno.env.get("PUSHPLUS_SECRET_KEY") || "";
   const missing = [];
   if (!supabaseUrl) missing.push("SUPABASE_URL");
-  if (!serviceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY 鎴?SUPABASE_SECRET_KEYS");
-  if (!appToken && !pushplusToken) missing.push("WXPUSHER_APP_TOKEN 鎴?PUSHPLUS_TOKEN");
-  if (missing.length) return json({ error: `Edge Function 鐜鍙橀噺缂哄皯锛?{missing.join("銆?)}` }, 500);
+  if (!serviceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY 或 SUPABASE_SECRET_KEYS");
+  if (!appToken && !pushplusToken) missing.push("WXPUSHER_APP_TOKEN 或 PUSHPLUS_TOKEN");
+  if (missing.length) return json({ error: `Edge Function 环境变量缺少：${missing.join("、")}` }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey);
   const requestUrl = new URL(req.url);
@@ -349,8 +348,8 @@ Deno.serve(async (req) => {
 
     if (action === "send-due-reminders") {
       const expected = Deno.env.get("CRON_SECRET") || "";
-      if (!expected) return json({ error: "CRON_SECRET 鏈厤缃紝瀹氭椂鎺ㄩ€佸凡绂佺敤" }, 500);
-      if (expected && req.headers.get("x-cron-secret") !== expected) return json({ error: "鏃犳潈鎵ц瀹氭椂鎺ㄩ€? }, 401);
+      if (!expected) return json({ error: "CRON_SECRET 未配置，定时推送已禁用" }, 500);
+      if (expected && req.headers.get("x-cron-secret") !== expected) return json({ error: "无权执行定时推送" }, 401);
       const built = await buildDailyNotifications(admin);
       let sent = 0;
       let failed = 0;
@@ -366,7 +365,7 @@ Deno.serve(async (req) => {
 
     const user = await authedUser(req, admin);
     const role = await userRole(admin, user.id);
-    if (!activeOrGrace(role)) return json({ error: "鏈嶅姟宸叉殏鍋滐紝涓嶈兘鍙戦€佸井淇℃彁閱? }, 403);
+    if (!activeOrGrace(role)) return json({ error: "服务已暂停，不能发送微信提醒" }, 403);
 
     if (action === "pushplus-create-bind-qr") {
       const qr = await createPushPlusBindQr(admin, user.id, pushplusToken, pushplusSecretKey);
@@ -375,13 +374,13 @@ Deno.serve(async (req) => {
 
     if (action === "pushplus-bind-status") {
       const bindCode = String(body.bind_code || body.bindCode || "").trim();
-      if (!bindCode) return json({ error: "缂哄皯缁戝畾鐮? }, 400);
+      if (!bindCode) return json({ error: "缺少绑定码" }, 400);
       const { data: session, error } = await admin.from("pushplus_bind_sessions")
         .select("*")
         .eq("bind_code", bindCode)
         .eq("user_id", user.id)
         .maybeSingle();
-      if (error) return json({ error: `${error.message}銆傝鍏堟墽琛屾渶鏂?PushPlus SQL` }, 500);
+      if (error) return json({ error: `${error.message}。请先执行最新 PushPlus SQL` }, 500);
       if (!session) return json({ ok: true, bound: false });
       if (new Date(session.expires_at).getTime() < Date.now() && session.status !== "bound") {
         await admin.from("pushplus_bind_sessions").update({ status: "expired", updated_at: new Date().toISOString() }).eq("bind_code", bindCode);
@@ -398,36 +397,36 @@ Deno.serve(async (req) => {
 
     if (action === "send-test") {
       const binding = await bindingFor(admin, user.id);
-      if (!hasPushChannel(binding)) return json({ error: "璇峰厛鍦ㄩ€氱煡涓績缁戝畾鎺ㄩ€侀€氶亾" }, 400);
+      if (!hasPushChannel(binding)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
       let sent = 0;
       let failed = 0;
       if (binding.enabled !== false && binding.wxpusher_uid) try {
-        if (!appToken) throw new Error("WxPusher 绯荤粺 AppToken 鏈厤缃?);
-        await sendWx(appToken, binding.wxpusher_uid, "寰俊鎻愰啋娴嬭瘯", "杩欐槸涓€鏉℃潵鑷尰鑽簱瀛樺姩閿€绠＄悊绯荤粺鐨?WxPusher 娴嬭瘯鎻愰啋銆?);
+        if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
+        await sendWx(appToken, binding.wxpusher_uid, "微信提醒测试", "这是一条来自医药库存动销管理系统的 WxPusher 测试提醒。");
         sent++;
       } catch (_) {
         failed++;
       }
       const receiver = pushplusReceiver(binding);
       if (binding.pushplus_enabled && receiver) try {
-        if (!pushplusToken) throw new Error("PushPlus 绯荤粺鍙戦€?Token 鏈厤缃?);
-        await sendPushPlus(pushplusToken, receiver, "寰俊鎻愰啋娴嬭瘯", "杩欐槸涓€鏉℃潵鑷尰鑽簱瀛樺姩閿€绠＄悊绯荤粺鐨?PushPlus 娴嬭瘯鎻愰啋銆?);
+        if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
+        await sendPushPlus(pushplusToken, receiver, "微信提醒测试", "这是一条来自医药库存动销管理系统的 PushPlus 测试提醒。");
         sent++;
       } catch (_) {
         failed++;
       }
-      if (!sent) return json({ error: "娌℃湁鍙敤鎺ㄩ€侀€氶亾锛岃妫€鏌?UID/鎺ユ敹浠ょ墝銆佸惎鐢ㄧ姸鎬佸拰 Edge Function Secret" }, 400);
+      if (!sent) return json({ error: "没有可用推送通道，请检查 UID/接收令牌、启用状态和 Edge Function Secret" }, 400);
       return json({ ok: true, sent, failed });
     }
 
     if (action === "send-notification") {
       const id = Number(body.notification_id);
       const binding = await bindingFor(admin, user.id);
-      if (!hasPushChannel(binding)) return json({ error: "璇峰厛鍦ㄩ€氱煡涓績缁戝畾鎺ㄩ€侀€氶亾" }, 400);
+      if (!hasPushChannel(binding)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
       const { data: n, error } = await admin.from("notification_events").select("*").eq("id", id).eq("user_id", user.id).maybeSingle();
-      if (error || !n) return json({ error: "鏈壘鍒版彁閱? }, 404);
+      if (error || !n) return json({ error: "未找到提醒" }, 404);
       const r = await sendOneNotification(admin, appToken, pushplusToken, n, binding);
-      if (!r.ok) return json({ error: r.error || "鎺ㄩ€佸け璐? }, 500);
+      if (!r.ok) return json({ error: r.error || "推送失败" }, 500);
       return json({ ok: true, sent: r.sent, failed: r.failed });
     }
 
@@ -437,10 +436,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === "broadcast-announcement") {
-      if (!role || !["admin", "super_admin"].includes(role.role)) return json({ error: "鍙湁绠＄悊鍛樺彲浠ョ兢鍙戠郴缁熸洿鏂? }, 403);
+      if (!role || !["admin", "super_admin"].includes(role.role)) return json({ error: "只有管理员可以群发系统更新" }, 403);
       const id = Number(body.announcement_id);
       const { data: announcement } = await admin.from("system_announcements").select("*").eq("id", id).maybeSingle();
-      if (!announcement) return json({ error: "鏈壘鍒扮郴缁熸洿鏂? }, 404);
+      if (!announcement) return json({ error: "未找到系统更新" }, 404);
       const { data: bindings } = await admin.from("wechat_bindings").select("*");
       const { data: roles } = await admin.from("user_roles").select("user_id,role,trial_ends_at,paid_until");
       const roleMap = new Map((roles || []).map((r: any) => [r.user_id, r]));
@@ -453,7 +452,7 @@ Deno.serve(async (req) => {
         const matched = target === "all" || target === targetRole.role || (target === "admin" && ["admin", "super_admin"].includes(targetRole.role));
         if (!matched) continue;
         if (b.enabled !== false && b.wxpusher_uid) try {
-          if (!appToken) throw new Error("WxPusher 绯荤粺 AppToken 鏈厤缃?);
+          if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
           await sendWx(appToken, b.wxpusher_uid, announcement.title, announcement.content);
           sent++;
         } catch (_) {
@@ -461,7 +460,7 @@ Deno.serve(async (req) => {
         }
         const receiver = pushplusReceiver(b);
         if (b.pushplus_enabled && receiver) try {
-          if (!pushplusToken) throw new Error("PushPlus 绯荤粺鍙戦€?Token 鏈厤缃?);
+          if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
           await sendPushPlus(pushplusToken, receiver, announcement.title, announcement.content);
           sent++;
         } catch (_) {
@@ -471,9 +470,8 @@ Deno.serve(async (req) => {
       return json({ ok: true, sent, failed });
     }
 
-    return json({ error: "鏈煡鎿嶄綔" }, 400);
+    return json({ error: "未知操作" }, 400);
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
 });
-

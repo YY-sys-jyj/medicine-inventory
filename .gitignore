@@ -15,3 +15,12 @@ Thumbs.db
 
 # Supabase CLI local state
 supabase/.temp/
+
+# Multi-account config files
+auth.*.json
+config.*.toml
+start-*.ps1
+save-*.ps1
+
+# Website extras
+docs/web.html

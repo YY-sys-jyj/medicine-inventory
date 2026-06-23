@@ -201,7 +201,7 @@ var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>
 var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
-var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,activeTab='ledger';
+var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger';
 var _lastLoginAttempt=0,_cooldownInterval=null;
 var _idleTimeout=30*60*1000,_idleWarningAt=29*60*1000,_idleTimer=null,_idleWarningTimer=null,_idleWarningShown=false;
 var GRACE_DAYS=3,accessInfo={state:'active',canRead:true,canWrite:true};
@@ -412,7 +412,7 @@ async function handleLogout(){
   clearIdleTimers();_lastLoginAttempt=0;
   var sb=document.getElementById('pw-strength-bar');if(sb)sb.style.display='none';
   if(supabaseClient)await supabaseClient.auth.signOut();
-  currentUser=null;userRole=null;products=[];payments=[];notifications=[];announcements=[];wechatBinding=null;
+  currentUser=null;userRole=null;products=[];payments=[];notifications=[];announcements=[];wechatBinding=null;if(pushplusBindTimer){clearInterval(pushplusBindTimer);pushplusBindTimer=null}
   document.getElementById('app-container').classList.add('hidden');document.getElementById('login-page').classList.remove('hidden');
   document.getElementById('login-password').value='';document.getElementById('login-btn').innerHTML='登 录';document.getElementById('login-btn').disabled=false;
   var items=document.querySelectorAll('.admin-only');for(var i=0;i<items.length;i++)items[i].style.display='none';
@@ -504,7 +504,8 @@ async function renderWechatBindBox(){
   var box=document.getElementById('wechat-bind-box');if(!box)return;
   var r=await loadWechatBinding(),uid=wechatBinding&&wechatBinding.wxpusher_uid?wechatBinding.wxpusher_uid:'',pr=wechatBinding&&(wechatBinding.pushplus_receiver||wechatBinding.pushplus_to)?(wechatBinding.pushplus_receiver||wechatBinding.pushplus_to):'';
   var err=r&&r.error?'<div class="readonly-note">推送绑定表未创建或缺字段，请执行最新 PushPlus 接收端 SQL。</div>':'';
-  box.innerHTML=err+'<div class="admin-section" style="margin-bottom:18px"><h3>推送通道绑定</h3><div class="form-row"><div class="form-group"><label class="form-label">WxPusher UID</label><input class="form-input" id="wxpusher-uid" placeholder="例如 UID_xxxxx" value="'+esc(uid)+'"></div><div class="form-group"><label class="form-label">WxPusher 状态</label><select class="form-input" id="wxpusher-enabled"><option value="true" '+(!wechatBinding||wechatBinding.enabled!==false?'selected':'')+'>开启 WxPusher</option><option value="false" '+(wechatBinding&&wechatBinding.enabled===false?'selected':'')+'>暂停 WxPusher</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">PushPlus 接收令牌</label><input class="form-input" id="pushplus-receiver" placeholder="填写好友令牌/接收码，不是个人发送 Token" value="'+esc(pr)+'"></div><div class="form-group"><label class="form-label">PushPlus 状态</label><select class="form-input" id="pushplus-enabled"><option value="true" '+(wechatBinding&&wechatBinding.pushplus_enabled?'selected':'')+'>开启 PushPlus</option><option value="false" '+(!wechatBinding||!wechatBinding.pushplus_enabled?'selected':'')+'>暂停 PushPlus</option></select></div></div><div class="btn-group"><button class="btn btn-primary btn-sm" onclick="saveWechatBinding()">保存绑定</button><button class="btn btn-sm" onclick="sendWechatTest()">发送测试</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">推送未发提醒</button></div><p style="font-size:12px;color:var(--text3);margin-top:8px">普通客户只绑定接收身份；系统使用管理员配置的 PushPlus Token 统一发送。WxPusher 可继续作为备用线路。</p></div>';
+  var bound=pr?'<p style="font-size:12px;color:var(--success);margin-top:8px">PushPlus 已绑定'+(wechatBinding&&wechatBinding.pushplus_friend_nick?'：'+esc(wechatBinding.pushplus_friend_nick):'')+'。</p>':'<p style="font-size:12px;color:var(--text3);margin-top:8px">PushPlus 未绑定。推荐点击“生成绑定二维码”，客户扫码后会自动绑定。</p>';
+  box.innerHTML=err+'<div class="admin-section" style="margin-bottom:18px"><h3>推送通道绑定</h3><div class="form-row"><div class="form-group"><label class="form-label">WxPusher UID</label><input class="form-input" id="wxpusher-uid" placeholder="例如 UID_xxxxx" value="'+esc(uid)+'"></div><div class="form-group"><label class="form-label">WxPusher 状态</label><select class="form-input" id="wxpusher-enabled"><option value="true" '+(!wechatBinding||wechatBinding.enabled!==false?'selected':'')+'>开启 WxPusher</option><option value="false" '+(wechatBinding&&wechatBinding.enabled===false?'selected':'')+'>暂停 WxPusher</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">PushPlus 接收令牌（备用手动填写）</label><input class="form-input" id="pushplus-receiver" placeholder="自动扫码绑定后会自动填入，也可手动填写好友令牌" value="'+esc(pr)+'"></div><div class="form-group"><label class="form-label">PushPlus 状态</label><select class="form-input" id="pushplus-enabled"><option value="true" '+(wechatBinding&&wechatBinding.pushplus_enabled?'selected':'')+'>开启 PushPlus</option><option value="false" '+(!wechatBinding||!wechatBinding.pushplus_enabled?'selected':'')+'>暂停 PushPlus</option></select></div></div><div class="btn-group"><button class="btn btn-primary btn-sm" onclick="saveWechatBinding()">保存绑定</button><button class="btn btn-sm" onclick="createPushplusBindQr()">生成绑定二维码</button><button class="btn btn-sm" onclick="sendWechatTest()">发送测试</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">推送未发提醒</button></div><div id="pushplus-qr-box" style="margin-top:12px"></div>'+bound+'<p style="font-size:12px;color:var(--text3);margin-top:8px">普通客户只负责扫码接收；系统使用管理员配置的 PushPlus Token 统一发送。WxPusher 可继续作为备用线路。</p></div>';
 }
 async function saveWechatBinding(){
   if(!currentUser)return;
@@ -537,6 +538,29 @@ async function callWxPusherFunction(action,payload){
 async function sendWechatTest(){var r=await callWxPusherFunction('send-test',{});toast(r.error?'测试失败：'+r.error:'测试消息已发送：成功 '+(r.data.sent||0)+' 条，失败 '+(r.data.failed||0)+' 条')}
 async function pushNotificationToWechat(id){var r=await callWxPusherFunction('send-notification',{notification_id:id});if(r.error)toast('推送失败：'+r.error);else{toast('已推送到微信');renderNotifications()}}
 async function pushMyRemindersToWechat(){var r=await callWxPusherFunction('push-my-reminders',{});if(r.error)toast('推送失败：'+r.error);else{toast('微信推送完成：成功 '+(r.data.sent||0)+' 条，失败 '+(r.data.failed||0)+' 条');renderNotifications()}}
+async function createPushplusBindQr(){
+  var box=document.getElementById('pushplus-qr-box');if(box)box.innerHTML='<div class="readonly-note">正在生成绑定二维码...</div>';
+  var r=await callWxPusherFunction('pushplus-create-bind-qr',{});
+  if(r.error){if(box)box.innerHTML='<div class="readonly-note">二维码生成失败：'+esc(r.error)+'</div>';return toast('二维码生成失败：'+r.error)}
+  var d=r.data||{},code=d.bindCode||d.bind_code,qr=d.qrCodeImgUrl||d.qr_code_url,cb=d.callbackUrl||'';
+  if(!qr){if(box)box.innerHTML='<div class="readonly-note">二维码生成失败：未返回二维码地址</div>';return}
+  if(box)box.innerHTML='<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><img src="'+esc(qr)+'" alt="PushPlus 绑定二维码" style="width:180px;height:180px;border:1px solid var(--border);border-radius:8px;background:#fff;padding:8px"><div><div style="font-size:13px;color:var(--text2);line-height:1.7">请用客户微信扫码绑定。二维码约 30 分钟有效，扫码成功后会自动写入接收令牌。</div><div style="font-size:12px;color:var(--text3);margin-top:6px">绑定码：'+esc(code||'')+'</div>'+(cb?'<div style="font-size:12px;color:var(--text3);margin-top:6px;word-break:break-all">回调地址：'+esc(cb)+'</div>':'')+'<button class="btn btn-sm" style="margin-top:10px" onclick="checkPushplusBindStatus(\\''+esc(code||'')+'\\',true)">检查绑定状态</button></div></div>';
+  if(pushplusBindTimer){clearInterval(pushplusBindTimer)}
+  pushplusBindTimer=setInterval(function(){checkPushplusBindStatus(code,false)},5000);
+}
+async function checkPushplusBindStatus(code,manual){
+  if(!code)return;
+  var r=await callWxPusherFunction('pushplus-bind-status',{bind_code:code});
+  if(r.error){if(manual)toast('检查失败：'+r.error);return}
+  if(r.data&&r.data.bound){
+    if(pushplusBindTimer){clearInterval(pushplusBindTimer);pushplusBindTimer=null}
+    toast('PushPlus 已自动绑定');
+    await renderWechatBindBox();
+  }else if(r.data&&r.data.expired){
+    if(pushplusBindTimer){clearInterval(pushplusBindTimer);pushplusBindTimer=null}
+    var box=document.getElementById('pushplus-qr-box');if(box)box.innerHTML='<div class="readonly-note">二维码已过期，请重新生成。</div>';
+  }else if(manual)toast('还没有收到扫码绑定，请稍后再试');
+}
 function renderNotificationAdminBox(){
   var b=document.getElementById('notification-admin-box');if(!b)return;
   if(!isAdminRole()){b.innerHTML='';return}

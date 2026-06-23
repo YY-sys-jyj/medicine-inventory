@@ -2,10 +2,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 type JsonMap = Record<string, unknown>;
 
+let pushplusAccessKey = "";
+let pushplusAccessKeyUntil = 0;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 function json(body: JsonMap, status = 200) {
@@ -82,6 +85,97 @@ async function sendPushPlus(systemToken: string, receiver: string, title: string
     throw new Error(data.msg || data.message || `PushPlus HTTP ${res.status}`);
   }
   return data;
+}
+
+async function getPushPlusAccessKey(token: string, secretKey: string) {
+  if (!token) throw new Error("PushPlus 系统发送 Token 未配置");
+  if (!secretKey) throw new Error("PushPlus SecretKey 未配置，请在 Supabase Secrets 添加 PUSHPLUS_SECRET_KEY");
+  if (pushplusAccessKey && Date.now() < pushplusAccessKeyUntil) return pushplusAccessKey;
+  const res = await fetch("https://www.pushplus.plus/api/common/openApi/getAccessKey", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, secretKey }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.code !== 200 || !data.data?.accessKey) {
+    throw new Error(data.msg || data.message || `PushPlus AccessKey HTTP ${res.status}`);
+  }
+  pushplusAccessKey = String(data.data.accessKey);
+  const expiresIn = Number(data.data.expiresIn || 7200);
+  pushplusAccessKeyUntil = Date.now() + Math.max(60, expiresIn - 300) * 1000;
+  return pushplusAccessKey;
+}
+
+async function createPushPlusBindQr(admin: any, userId: string, token: string, secretKey: string) {
+  const accessKey = await getPushPlusAccessKey(token, secretKey);
+  const bindCode = `ysj_${crypto.randomUUID().replaceAll("-", "")}`;
+  const seconds = 1800;
+  const url = new URL("https://www.pushplus.plus/api/open/friend/getQrCode");
+  const appId = Deno.env.get("PUSHPLUS_WECHAT_APP_ID") || "";
+  if (appId) url.searchParams.set("appId", appId);
+  url.searchParams.set("content", bindCode);
+  url.searchParams.set("second", String(seconds));
+  url.searchParams.set("scanCount", "1");
+  const res = await fetch(url.toString(), { headers: { "access-key": accessKey } });
+  const data = await res.json().catch(() => ({}));
+  const qrCodeImgUrl = data.data?.qrCodeImgUrl || data.data?.qrCode || data.data?.url || "";
+  if (!res.ok || data.code !== 200 || !qrCodeImgUrl) {
+    throw new Error(data.msg || data.message || `PushPlus 二维码生成失败 HTTP ${res.status}`);
+  }
+  const expiresAt = new Date(Date.now() + seconds * 1000).toISOString();
+  const row = {
+    bind_code: bindCode,
+    user_id: userId,
+    qr_code_url: qrCodeImgUrl,
+    status: "pending",
+    expires_at: expiresAt,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await admin.from("pushplus_bind_sessions").upsert(row, { onConflict: "bind_code" });
+  if (error) throw new Error(`${error.message}。请先执行最新 PushPlus SQL`);
+  return { bindCode, qrCodeImgUrl, expiresAt };
+}
+
+async function bindPushPlusReceiver(admin: any, bindCode: string, friendInfo: any, rawPayload: any) {
+  const receiver = String(friendInfo?.token || "").trim();
+  if (!bindCode || !receiver) return { ignored: true };
+  const { data: session, error } = await admin.from("pushplus_bind_sessions")
+    .select("*")
+    .eq("bind_code", bindCode)
+    .maybeSingle();
+  if (error || !session) return { ignored: true };
+  const now = new Date().toISOString();
+  const friendId = friendInfo?.friendId === undefined ? "" : String(friendInfo.friendId);
+  const friendNick = friendInfo?.nickName === undefined ? "" : String(friendInfo.nickName);
+  const bindingRow = {
+    user_id: session.user_id,
+    pushplus_receiver: receiver,
+    pushplus_enabled: true,
+    pushplus_bind_code: bindCode,
+    pushplus_friend_id: friendId,
+    pushplus_friend_nick: friendNick,
+    pushplus_bound_at: now,
+    updated_at: now,
+  };
+  const { error: bindError } = await admin.from("wechat_bindings").upsert(bindingRow, { onConflict: "user_id" });
+  if (bindError) throw new Error(bindError.message);
+  await admin.from("pushplus_bind_sessions").update({
+    status: "bound",
+    friend_token: receiver,
+    friend_id: friendId,
+    friend_nick: friendNick,
+    raw_payload: rawPayload,
+    updated_at: now,
+  }).eq("bind_code", bindCode);
+  return { bound: true, userId: session.user_id };
+}
+
+async function handlePushPlusCallback(admin: any, payload: any) {
+  if (payload?.event && payload.event !== "add_friend") return json({ code: 200, msg: "success", ignored: true });
+  const bindCode = String(payload?.qrCode || payload?.content || payload?.bindCode || "").trim();
+  const friendInfo = payload?.friendInfo || payload?.friend || payload?.data || {};
+  await bindPushPlusReceiver(admin, bindCode, friendInfo, payload);
+  return json({ code: 200, msg: "success" });
 }
 
 async function authedUser(req: Request, admin: any) {
@@ -221,7 +315,7 @@ async function buildDailyNotifications(admin: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST" && req.method !== "GET") return json({ error: "Method not allowed" }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   let serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -235,6 +329,7 @@ Deno.serve(async (req) => {
   }
   const appToken = Deno.env.get("WXPUSHER_APP_TOKEN") || "";
   const pushplusToken = Deno.env.get("PUSHPLUS_TOKEN") || Deno.env.get("PUSHPLUS_APP_TOKEN") || "";
+  const pushplusSecretKey = Deno.env.get("PUSHPLUS_SECRET_KEY") || "";
   const missing = [];
   if (!supabaseUrl) missing.push("SUPABASE_URL");
   if (!serviceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY 或 SUPABASE_SECRET_KEYS");
@@ -242,10 +337,15 @@ Deno.serve(async (req) => {
   if (missing.length) return json({ error: `Edge Function 环境变量缺少：${missing.join("、")}` }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey);
-  const body = await req.json().catch(() => ({}));
+  const requestUrl = new URL(req.url);
+  const body = req.method === "POST" ? await req.json().catch(() => ({})) : Object.fromEntries(requestUrl.searchParams.entries());
   const action = String(body.action || "");
 
   try {
+    if (requestUrl.searchParams.get("source") === "pushplus" || action === "pushplus-callback" || body.event === "add_friend") {
+      return await handlePushPlusCallback(admin, body);
+    }
+
     if (action === "send-due-reminders") {
       const expected = Deno.env.get("CRON_SECRET") || "";
       if (!expected) return json({ error: "CRON_SECRET 未配置，定时推送已禁用" }, 500);
@@ -266,6 +366,34 @@ Deno.serve(async (req) => {
     const user = await authedUser(req, admin);
     const role = await userRole(admin, user.id);
     if (!activeOrGrace(role)) return json({ error: "服务已暂停，不能发送微信提醒" }, 403);
+
+    if (action === "pushplus-create-bind-qr") {
+      const qr = await createPushPlusBindQr(admin, user.id, pushplusToken, pushplusSecretKey);
+      return json({ ok: true, ...qr, callbackUrl: `${requestUrl.origin}${requestUrl.pathname}?source=pushplus` });
+    }
+
+    if (action === "pushplus-bind-status") {
+      const bindCode = String(body.bind_code || body.bindCode || "").trim();
+      if (!bindCode) return json({ error: "缺少绑定码" }, 400);
+      const { data: session, error } = await admin.from("pushplus_bind_sessions")
+        .select("*")
+        .eq("bind_code", bindCode)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) return json({ error: `${error.message}。请先执行最新 PushPlus SQL` }, 500);
+      if (!session) return json({ ok: true, bound: false });
+      if (new Date(session.expires_at).getTime() < Date.now() && session.status !== "bound") {
+        await admin.from("pushplus_bind_sessions").update({ status: "expired", updated_at: new Date().toISOString() }).eq("bind_code", bindCode);
+        return json({ ok: true, bound: false, expired: true });
+      }
+      return json({
+        ok: true,
+        bound: session.status === "bound",
+        expired: false,
+        friendNick: session.friend_nick || "",
+        expiresAt: session.expires_at,
+      });
+    }
 
     if (action === "send-test") {
       const binding = await bindingFor(admin, user.id);

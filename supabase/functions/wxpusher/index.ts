@@ -115,7 +115,7 @@ async function createPushPlusBindQr(admin: any, userId: string, token: string, s
   if (appId) url.searchParams.set("appId", appId);
   url.searchParams.set("content", bindCode);
   url.searchParams.set("second", String(seconds));
-  url.searchParams.set("scanCount", "10");
+  
   const res = await fetch(url.toString(), { headers: { "access-key": accessKey } });
   const data = await res.json().catch(() => ({}));
   const qrCodeImgUrl = data.data?.qrCodeImgUrl || data.data?.qrCode || data.data?.url || "";

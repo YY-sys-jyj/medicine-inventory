@@ -5,6 +5,7 @@ create table if not exists public.wechat_bindings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   wxpusher_uid text default '',
   enabled boolean not null default true,
+  pushplus_receiver text default '',
   pushplus_token text default '',
   pushplus_enabled boolean not null default false,
   created_at timestamptz default now(),
@@ -15,6 +16,9 @@ create index if not exists idx_wechat_bindings_uid
 on public.wechat_bindings(wxpusher_uid);
 
 alter table public.wechat_bindings enable row level security;
+
+alter table public.wechat_bindings
+add column if not exists pushplus_receiver text default '';
 
 alter table public.wechat_bindings
 add column if not exists pushplus_token text default '';

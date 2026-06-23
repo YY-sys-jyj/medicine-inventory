@@ -65,12 +65,13 @@ async function sendWx(appToken: string, uid: string, title: string, content: str
   return data;
 }
 
-async function sendPushPlus(token: string, title: string, content: string) {
+async function sendPushPlus(systemToken: string, receiver: string, title: string, content: string) {
   const res = await fetch("https://www.pushplus.plus/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      token,
+      token: systemToken,
+      to: receiver,
       title: title.slice(0, 100),
       content: `${title}\n\n${content}`,
       template: "txt",
@@ -102,11 +103,23 @@ async function bindingFor(admin: any, userId: string) {
   return data;
 }
 
-async function sendOneNotification(admin: any, appToken: string, notification: any, binding: any) {
+function pushplusReceiver(binding: any) {
+  return String(binding?.pushplus_receiver || binding?.pushplus_to || "").trim();
+}
+
+function hasPushChannel(binding: any) {
+  return !!(
+    (binding?.enabled !== false && binding?.wxpusher_uid) ||
+    (binding?.pushplus_enabled && pushplusReceiver(binding))
+  );
+}
+
+async function sendOneNotification(admin: any, appToken: string, pushplusToken: string, notification: any, binding: any) {
   let sent = 0;
   let failed = 0;
   const patch: Record<string, string | null> = {};
   if (binding.enabled !== false && binding.wxpusher_uid && !notification.wxpusher_sent_at) try {
+    if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
     await sendWx(appToken, binding.wxpusher_uid, notification.title || "系统提醒", notification.content || "");
     patch.wxpusher_sent_at = new Date().toISOString();
     patch.wxpusher_error = null;
@@ -116,8 +129,10 @@ async function sendOneNotification(admin: any, appToken: string, notification: a
     patch.wxpusher_error = message;
     failed++;
   }
-  if (binding.pushplus_enabled && binding.pushplus_token && !notification.pushplus_sent_at) try {
-    await sendPushPlus(binding.pushplus_token, notification.title || "系统提醒", notification.content || "");
+  const receiver = pushplusReceiver(binding);
+  if (binding.pushplus_enabled && receiver && !notification.pushplus_sent_at) try {
+    if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
+    await sendPushPlus(pushplusToken, receiver, notification.title || "系统提醒", notification.content || "");
     patch.pushplus_sent_at = new Date().toISOString();
     patch.pushplus_error = null;
     sent++;
@@ -130,9 +145,9 @@ async function sendOneNotification(admin: any, appToken: string, notification: a
   return { ok: sent > 0, sent, failed };
 }
 
-async function pushUserReminders(admin: any, appToken: string, userId: string, limit = 20) {
+async function pushUserReminders(admin: any, appToken: string, pushplusToken: string, userId: string, limit = 20) {
   const binding = await bindingFor(admin, userId);
-  if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) throw new Error("请先在通知中心绑定推送通道");
+  if (!hasPushChannel(binding)) throw new Error("请先在通知中心绑定推送通道");
   const { data, error } = await admin.from("notification_events")
     .select("*")
     .eq("user_id", userId)
@@ -143,10 +158,10 @@ async function pushUserReminders(admin: any, appToken: string, userId: string, l
   let failed = 0;
   const pending = (data || []).filter((n: any) =>
     (binding.enabled !== false && binding.wxpusher_uid && !n.wxpusher_sent_at) ||
-    (binding.pushplus_enabled && binding.pushplus_token && !n.pushplus_sent_at)
+    (binding.pushplus_enabled && pushplusReceiver(binding) && !n.pushplus_sent_at)
   ).slice(0, limit);
   for (const n of pending) {
-    const r = await sendOneNotification(admin, appToken, n, binding);
+    const r = await sendOneNotification(admin, appToken, pushplusToken, n, binding);
     sent += r.sent || 0;
     failed += r.failed || 0;
   }
@@ -219,10 +234,11 @@ Deno.serve(async (req) => {
     }
   }
   const appToken = Deno.env.get("WXPUSHER_APP_TOKEN") || "";
+  const pushplusToken = Deno.env.get("PUSHPLUS_TOKEN") || Deno.env.get("PUSHPLUS_APP_TOKEN") || "";
   const missing = [];
   if (!supabaseUrl) missing.push("SUPABASE_URL");
   if (!serviceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY 或 SUPABASE_SECRET_KEYS");
-  if (!appToken) missing.push("WXPUSHER_APP_TOKEN");
+  if (!appToken && !pushplusToken) missing.push("WXPUSHER_APP_TOKEN 或 PUSHPLUS_TOKEN");
   if (missing.length) return json({ error: `Edge Function 环境变量缺少：${missing.join("、")}` }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey);
@@ -239,8 +255,8 @@ Deno.serve(async (req) => {
       let failed = 0;
       for (const userId of built.userIds) {
         const binding = await bindingFor(admin, userId);
-        if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) continue;
-        const r = await pushUserReminders(admin, appToken, userId, 20);
+        if (!hasPushChannel(binding)) continue;
+        const r = await pushUserReminders(admin, appToken, pushplusToken, userId, 20);
         sent += r.sent;
         failed += r.failed;
       }
@@ -253,38 +269,41 @@ Deno.serve(async (req) => {
 
     if (action === "send-test") {
       const binding = await bindingFor(admin, user.id);
-      if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
+      if (!hasPushChannel(binding)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
       let sent = 0;
       let failed = 0;
       if (binding.enabled !== false && binding.wxpusher_uid) try {
+        if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
         await sendWx(appToken, binding.wxpusher_uid, "微信提醒测试", "这是一条来自医药库存动销管理系统的 WxPusher 测试提醒。");
         sent++;
       } catch (_) {
         failed++;
       }
-      if (binding.pushplus_enabled && binding.pushplus_token) try {
-        await sendPushPlus(binding.pushplus_token, "微信提醒测试", "这是一条来自医药库存动销管理系统的 PushPlus 测试提醒。");
+      const receiver = pushplusReceiver(binding);
+      if (binding.pushplus_enabled && receiver) try {
+        if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
+        await sendPushPlus(pushplusToken, receiver, "微信提醒测试", "这是一条来自医药库存动销管理系统的 PushPlus 测试提醒。");
         sent++;
       } catch (_) {
         failed++;
       }
-      if (!sent) return json({ error: "没有可用推送通道，请检查 UID/Token 和启用状态" }, 400);
+      if (!sent) return json({ error: "没有可用推送通道，请检查 UID/接收令牌、启用状态和 Edge Function Secret" }, 400);
       return json({ ok: true, sent, failed });
     }
 
     if (action === "send-notification") {
       const id = Number(body.notification_id);
       const binding = await bindingFor(admin, user.id);
-      if (!binding || (!binding.wxpusher_uid && !binding.pushplus_token)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
+      if (!hasPushChannel(binding)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
       const { data: n, error } = await admin.from("notification_events").select("*").eq("id", id).eq("user_id", user.id).maybeSingle();
       if (error || !n) return json({ error: "未找到提醒" }, 404);
-      const r = await sendOneNotification(admin, appToken, n, binding);
+      const r = await sendOneNotification(admin, appToken, pushplusToken, n, binding);
       if (!r.ok) return json({ error: r.error || "推送失败" }, 500);
       return json({ ok: true, sent: r.sent, failed: r.failed });
     }
 
     if (action === "push-my-reminders") {
-      const result = await pushUserReminders(admin, appToken, user.id, 20);
+      const result = await pushUserReminders(admin, appToken, pushplusToken, user.id, 20);
       return json({ ok: true, ...result });
     }
 
@@ -305,13 +324,16 @@ Deno.serve(async (req) => {
         const matched = target === "all" || target === targetRole.role || (target === "admin" && ["admin", "super_admin"].includes(targetRole.role));
         if (!matched) continue;
         if (b.enabled !== false && b.wxpusher_uid) try {
+          if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
           await sendWx(appToken, b.wxpusher_uid, announcement.title, announcement.content);
           sent++;
         } catch (_) {
           failed++;
         }
-        if (b.pushplus_enabled && b.pushplus_token) try {
-          await sendPushPlus(b.pushplus_token, announcement.title, announcement.content);
+        const receiver = pushplusReceiver(b);
+        if (b.pushplus_enabled && receiver) try {
+          if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
+          await sendPushPlus(pushplusToken, receiver, announcement.title, announcement.content);
           sent++;
         } catch (_) {
           failed++;

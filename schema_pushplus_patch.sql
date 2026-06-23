@@ -1,5 +1,10 @@
--- PushPlus channel patch.
--- Run this after schema_wxpusher_patch.sql, or rerun schema_wxpusher_patch.sql after this update.
+-- PushPlus receiver-channel patch.
+-- Run this after schema_wxpusher_patch.sql.
+-- The Edge Function uses a system-level PUSHPLUS_TOKEN secret to send messages.
+-- Users only bind their PushPlus receiver/friend token here; they do not need to provide a sender token.
+
+alter table public.wechat_bindings
+add column if not exists pushplus_receiver text default '';
 
 alter table public.wechat_bindings
 add column if not exists pushplus_token text default '';

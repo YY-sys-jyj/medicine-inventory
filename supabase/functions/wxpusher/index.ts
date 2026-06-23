@@ -115,6 +115,7 @@ async function createPushPlusBindQr(admin: any, userId: string, token: string, s
   if (appId) url.searchParams.set("appId", appId);
   url.searchParams.set("content", bindCode);
   url.searchParams.set("second", String(seconds));
+  url.searchParams.set("scanCount", "999999999");
   
   const res = await fetch(url.toString(), { headers: { "access-key": accessKey } });
   const data = await res.json().catch(() => ({}));
@@ -475,3 +476,4 @@ Deno.serve(async (req) => {
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
 });
+

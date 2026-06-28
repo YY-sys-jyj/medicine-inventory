@@ -1,0 +1,20 @@
+name: Daily reminder push
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  push-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Supabase reminder function
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET"
+          curl --fail-with-body -X POST "https://lrvsblbnyismfmithqse.supabase.co/functions/v1/wxpusher" \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            --data '{"action":"send-due-reminders"}'

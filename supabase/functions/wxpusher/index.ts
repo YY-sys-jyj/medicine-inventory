@@ -115,7 +115,7 @@ async function createPushPlusBindQr(admin: any, userId: string, token: string, s
   if (appId) url.searchParams.set("appId", appId);
   url.searchParams.set("content", bindCode);
   url.searchParams.set("second", String(seconds));
-  url.searchParams.set("scanCount", "999999999");
+  url.searchParams.set("scanCount", "-1");
   const res = await fetch(url.toString(), { headers: { "access-key": accessKey } });
   const data = await res.json().catch(() => ({}));
   const qrCodeImgUrl = data.data?.qrCodeImgUrl || data.data?.qrCode || data.data?.url || "";
@@ -144,6 +144,14 @@ async function bindPushPlusReceiver(admin: any, bindCode: string, friendInfo: an
     .eq("bind_code", bindCode)
     .maybeSingle();
   if (error || !session) return { ignored: true };
+  if (new Date(session.expires_at).getTime() < Date.now() && session.status !== "bound") {
+    await admin.from("pushplus_bind_sessions").update({
+      status: "expired",
+      raw_payload: rawPayload,
+      updated_at: new Date().toISOString(),
+    }).eq("bind_code", bindCode);
+    return { ignored: true, expired: true };
+  }
   const now = new Date().toISOString();
   const friendId = friendInfo?.friendId === undefined ? "" : String(friendInfo.friendId);
   const friendNick = friendInfo?.nickName === undefined ? "" : String(friendInfo.nickName);

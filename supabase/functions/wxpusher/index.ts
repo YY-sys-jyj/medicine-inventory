@@ -217,34 +217,34 @@ function hasPushChannel(binding: any) {
 }
 
 async function sendOneNotification(admin: any, appToken: string, pushplusToken: string, notification: any, binding: any) {
-  let sent = 0;
-  let failed = 0;
+  let channelSent = 0;
+  let channelFailed = 0;
   const patch: Record<string, string | null> = {};
-  if (binding.enabled === true && binding.wxpusher_uid && !notification.wxpusher_sent_at) try {
-    if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
-    await sendWx(appToken, binding.wxpusher_uid, notification.title || "系统提醒", notification.content || "");
-    patch.wxpusher_sent_at = new Date().toISOString();
-    patch.wxpusher_error = null;
-    sent++;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    patch.wxpusher_error = message;
-    failed++;
-  }
   const receiver = pushplusReceiver(binding);
   if (binding.pushplus_enabled && receiver && !notification.pushplus_sent_at) try {
     if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
     await sendPushPlus(pushplusToken, receiver, notification.title || "系统提醒", notification.content || "");
     patch.pushplus_sent_at = new Date().toISOString();
     patch.pushplus_error = null;
-    sent++;
+    channelSent++;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     patch.pushplus_error = message;
-    failed++;
+    channelFailed++;
+  }
+  if (!channelSent && binding.enabled === true && binding.wxpusher_uid && !notification.wxpusher_sent_at) try {
+    if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
+    await sendWx(appToken, binding.wxpusher_uid, notification.title || "系统提醒", notification.content || "");
+    patch.wxpusher_sent_at = new Date().toISOString();
+    patch.wxpusher_error = null;
+    channelSent++;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    patch.wxpusher_error = message;
+    channelFailed++;
   }
   if (Object.keys(patch).length) await admin.from("notification_events").update(patch).eq("id", notification.id);
-  return { ok: sent > 0, sent, failed };
+  return { ok: channelSent > 0, sent: channelSent > 0 ? 1 : 0, failed: channelSent > 0 ? 0 : (channelFailed > 0 ? 1 : 0), channelSent, channelFailed };
 }
 
 async function pushUserReminders(admin: any, appToken: string, pushplusToken: string, userId: string, limit = 20) {
@@ -259,8 +259,11 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
   let sent = 0;
   let failed = 0;
   const pending = (data || []).filter((n: any) =>
-    (binding.enabled === true && binding.wxpusher_uid && !n.wxpusher_sent_at) ||
-    (binding.pushplus_enabled && pushplusReceiver(binding) && !n.pushplus_sent_at)
+    !n.wxpusher_sent_at &&
+    !n.pushplus_sent_at &&
+    !n.wxpusher_error &&
+    !n.pushplus_error &&
+    hasPushChannel(binding)
   ).slice(0, limit);
   for (const n of pending) {
     const r = await sendOneNotification(admin, appToken, pushplusToken, n, binding);
@@ -408,19 +411,23 @@ Deno.serve(async (req) => {
       if (!hasPushChannel(binding)) return json({ error: "请先在通知中心绑定推送通道" }, 400);
       let sent = 0;
       let failed = 0;
-      if (binding.enabled === true && binding.wxpusher_uid) try {
-        if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
-        await sendWx(appToken, binding.wxpusher_uid, "微信提醒测试", "这是一条来自医药库存动销管理系统的 WxPusher 测试提醒。");
-        sent++;
-      } catch (_) {
-        failed++;
-      }
+      let attempted = false;
       const receiver = pushplusReceiver(binding);
       if (binding.pushplus_enabled && receiver) try {
+        attempted = true;
         if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
         await sendPushPlus(pushplusToken, receiver, "微信提醒测试", "这是一条来自医药库存动销管理系统的 PushPlus 测试提醒。");
         sent++;
       } catch (_) {
+      }
+      if (!sent && binding.enabled === true && binding.wxpusher_uid) try {
+        attempted = true;
+        if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
+        await sendWx(appToken, binding.wxpusher_uid, "微信提醒测试", "这是一条来自医药库存动销管理系统的 WxPusher 测试提醒。");
+        sent++;
+      } catch (_) {
+      }
+      if (attempted && !sent) {
         failed++;
       }
       if (!sent) return json({ error: "没有可用推送通道，请检查 UID/接收令牌、启用状态和 Edge Function Secret" }, 400);
@@ -459,19 +466,26 @@ Deno.serve(async (req) => {
         const target = announcement.target_role || "all";
         const matched = target === "all" || target === targetRole.role || (target === "admin" && ["admin", "super_admin"].includes(targetRole.role));
         if (!matched) continue;
-        if (b.enabled === true && b.wxpusher_uid) try {
-          if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
-          await sendWx(appToken, b.wxpusher_uid, announcement.title, announcement.content);
-          sent++;
-        } catch (_) {
-          failed++;
-        }
+        let delivered = false;
+        let attempted = false;
         const receiver = pushplusReceiver(b);
         if (b.pushplus_enabled && receiver) try {
+          attempted = true;
           if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
           await sendPushPlus(pushplusToken, receiver, announcement.title, announcement.content);
+          delivered = true;
           sent++;
         } catch (_) {
+        }
+        if (!delivered && b.enabled === true && b.wxpusher_uid) try {
+          attempted = true;
+          if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
+          await sendWx(appToken, b.wxpusher_uid, announcement.title, announcement.content);
+          delivered = true;
+          sent++;
+        } catch (_) {
+        }
+        if (attempted && !delivered) {
           failed++;
         }
       }

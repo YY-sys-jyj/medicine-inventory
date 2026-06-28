@@ -216,6 +216,13 @@ function hasPushChannel(binding: any) {
   );
 }
 
+function notificationPriority(n: any) {
+  const severityRank = n?.severity === "red" ? 0 : n?.severity === "yellow" ? 1 : n?.severity === "green" ? 2 : 3;
+  const match = String(n?.content || "").match(/剩余\s*(-?\d+)\s*天/);
+  const daysRank = match ? Number(match[1]) : 9999;
+  return { severityRank, daysRank };
+}
+
 async function sendOneNotification(admin: any, appToken: string, pushplusToken: string, notification: any, binding: any) {
   let channelSent = 0;
   let channelFailed = 0;
@@ -264,7 +271,13 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
     !n.wxpusher_error &&
     !n.pushplus_error &&
     hasPushChannel(binding)
-  ).slice(0, limit);
+  ).sort((a: any, b: any) => {
+    const pa = notificationPriority(a);
+    const pb = notificationPriority(b);
+    if (pa.severityRank !== pb.severityRank) return pa.severityRank - pb.severityRank;
+    if (pa.daysRank !== pb.daysRank) return pa.daysRank - pb.daysRank;
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  }).slice(0, limit);
   for (const n of pending) {
     const r = await sendOneNotification(admin, appToken, pushplusToken, n, binding);
     sent += r.sent || 0;

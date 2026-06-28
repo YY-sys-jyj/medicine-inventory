@@ -458,6 +458,26 @@ async function recordPaymentLog(action,hospital,detail,amount){try{await supabas
 function todayKey(){return new Date().toISOString().slice(0,10)}
 function nl2br(s){return esc(s||'').replace(/\n/g,'<br>')}
 function notificationBadgeClass(severity){return severity==='red'?'badge-red':severity==='yellow'?'badge-yellow':'badge-green'}
+function notificationSeverityRank(n){var s=n&&n.severity;return s==='red'?0:s==='yellow'?1:s==='green'?2:3}
+function notificationSearchText(n){return[String(n.title||''),String(n.content||''),String(n.severity||''),String(n.type||''),String(n.source_type||'')].join(' ').toLowerCase()}
+function notificationGroup(n){var t=String(n.type||''),s=String(n.source_type||''),title=String(n.title||'');if(s==='product'||t.indexOf('product')===0||title.indexOf('药品')>=0)return'product';if(s==='payment'||t.indexOf('payment')===0||title.indexOf('医院')>=0||title.indexOf('回款')>=0)return'payment';return'other'}
+function notificationUrgencyValue(n){var m=String(n.content||'').match(/剩余\s*(-?\d+)\s*天/);return m?parseInt(m[1],10):9999}
+function sortNotifications(list){return(list||[]).slice().sort(function(a,b){var sr=notificationSeverityRank(a)-notificationSeverityRank(b);if(sr)return sr;var ur=notificationUrgencyValue(a)-notificationUrgencyValue(b);if(ur)return ur;var rr=(a.read_at?1:0)-(b.read_at?1:0);if(rr)return rr;return new Date(b.created_at||0)-new Date(a.created_at||0)})}
+function notificationActions(n){var acts=[],hasReceiver=wechatBinding&&(wechatBinding.wxpusher_uid||(wechatBinding.pushplus_enabled&&(wechatBinding.pushplus_receiver||wechatBinding.pushplus_to)));if(!n.read_at)acts.push('<button class="btn btn-sm" onclick="markNotificationRead('+n.id+')">标记已读</button>');if(n.wxpusher_sent_at||n.pushplus_sent_at)acts.push('<span class="badge badge-green">已推送</span>');else if(hasReceiver)acts.push('<button class="btn btn-sm" onclick="pushNotificationToWechat('+n.id+')">发提醒</button>');return acts.join('')||'—'}
+function renderNotificationTable(list,emptyText){if(!list.length)return'<div class="empty-state"><p>'+esc(emptyText)+'</p></div>';return'<table><thead><tr><th>时间</th><th>级别</th><th>标题</th><th>内容</th><th>状态</th><th>操作</th></tr></thead><tbody>'+list.map(function(n){return'<tr><td>'+fmtDate(n.created_at)+'</td><td><span class="badge '+notificationBadgeClass(n.severity)+'">'+esc(n.severity||'info')+'</span></td><td><strong>'+esc(n.title||'')+'</strong></td><td>'+esc(n.content||'')+'</td><td>'+(n.read_at?'<span class="badge badge-green">已读</span>':'<span class="badge badge-yellow">未读</span>')+'</td><td><div class="btn-group">'+notificationActions(n)+'</div></td></tr>'}).join('')+'</tbody></table>'}
+function renderNotificationLists(){
+  var root=document.getElementById('notification-lists');if(!root)return;
+  var q=(document.getElementById('search-notifications')?document.getElementById('search-notifications').value:'').toLowerCase().trim();
+  var f=document.getElementById('filter-notifications')?document.getElementById('filter-notifications').value:'all';
+  var list=sortNotifications((notifications||[]).filter(function(n){if(q&&notificationSearchText(n).indexOf(q)<0)return false;if(f==='unread'&&n.read_at)return false;if(f==='pushed'&&!n.wxpusher_sent_at&&!n.pushplus_sent_at)return false;if(f==='red'&&n.severity!=='red')return false;if(f==='yellow'&&n.severity!=='yellow')return false;if(f==='product'&&notificationGroup(n)!=='product')return false;if(f==='payment'&&notificationGroup(n)!=='payment')return false;return true}));
+  var product=list.filter(function(n){return notificationGroup(n)==='product'});
+  var payment=list.filter(function(n){return notificationGroup(n)==='payment'});
+  var other=list.filter(function(n){return notificationGroup(n)==='other'});
+  var h='<div class="report-section"><h3>药品效期提醒（红灯优先）</h3>'+renderNotificationTable(product,'没有匹配的药品提醒')+'</div>';
+  h+='<div class="report-section"><h3>医院回款提醒（到期优先）</h3>'+renderNotificationTable(payment,'没有匹配的医院回款提醒')+'</div>';
+  if(other.length)h+='<div class="report-section"><h3>其他业务提醒</h3>'+renderNotificationTable(other,'没有匹配的其他提醒')+'</div>';
+  root.innerHTML=h;
+}
 function buildReminderEvents(){
   var day=todayKey(),rows=[];
   products.forEach(function(p){
@@ -584,8 +604,8 @@ async function renderNotifications(){
   h+='</div><div class="report-section"><h3>业务提醒</h3>';
   if(nr.error)h+='<div class="empty-state"><p>提醒读取失败：'+esc(nr.error.message||JSON.stringify(nr.error))+'。请先执行通知中心 SQL。</p></div>';
   else if(!notifications.length)h+='<div class="empty-state"><p>暂无提醒，可点击“生成提醒”检查药品和医院回款。</p></div>';
-  else h+='<table><thead><tr><th>时间</th><th>级别</th><th>标题</th><th>内容</th><th>状态</th><th>操作</th></tr></thead><tbody>'+notifications.map(function(n){var acts=[],hasReceiver=wechatBinding&&(wechatBinding.wxpusher_uid||(wechatBinding.pushplus_enabled&&(wechatBinding.pushplus_receiver||wechatBinding.pushplus_to)));if(!n.read_at)acts.push('<button class="btn btn-sm" onclick="markNotificationRead('+n.id+')">标记已读</button>');if(n.wxpusher_sent_at||n.pushplus_sent_at)acts.push('<span class="badge badge-green">已推送</span>');else if(hasReceiver)acts.push('<button class="btn btn-sm" onclick="pushNotificationToWechat('+n.id+')">发提醒</button>');return'<tr><td>'+fmtDate(n.created_at)+'</td><td><span class="badge '+notificationBadgeClass(n.severity)+'">'+esc(n.severity||'info')+'</span></td><td><strong>'+esc(n.title||'')+'</strong></td><td>'+esc(n.content||'')+'</td><td>'+(n.read_at?'<span class="badge badge-green">已读</span>':'<span class="badge badge-yellow">未读</span>')+'</td><td><div class="btn-group">'+(acts.join('')||'—')+'</div></td></tr>'}).join('')+'</tbody></table>';
-  h+='</div>';c.innerHTML=h;await updateNotificationBadge();
+  else h+='<div class="filter-bar"><input class="search-input" id="search-notifications" placeholder="搜索药品、医院、联系人..." onkeydown="if(event.key===\'Enter\')renderNotificationLists()"><select class="filter-select" id="filter-notifications" onchange="renderNotificationLists()"><option value="all">全部提醒</option><option value="red">红色紧急</option><option value="yellow">黄色提醒</option><option value="unread">未读</option><option value="pushed">已推送</option><option value="product">只看药品</option><option value="payment">只看医院</option></select><button class="btn btn-sm" onclick="renderNotificationLists()">搜索</button><button class="btn btn-sm" onclick="document.getElementById(\'search-notifications\').value=\'\';document.getElementById(\'filter-notifications\').value=\'all\';renderNotificationLists()">清空</button></div><div id="notification-lists"></div>';
+  h+='</div>';c.innerHTML=h;if(!nr.error&&notifications.length)renderNotificationLists();await updateNotificationBadge();
 }
 async function markNotificationRead(id){var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id)});if(r.error)toast('操作失败：'+(r.error.message||JSON.stringify(r.error)));else renderNotifications()}
 async function markAllNotificationsRead(){var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('user_id',currentUser.id)});if(r.error)toast('操作失败：'+(r.error.message||JSON.stringify(r.error)));else{toast('已全部标记为已读');renderNotifications()}}

@@ -377,14 +377,22 @@ Deno.serve(async (req) => {
       const built = await buildDailyNotifications(admin);
       let sent = 0;
       let failed = 0;
+      let boundUsers = 0;
+      let skippedNoBinding = 0;
+      let pushedUsers = 0;
       for (const userId of built.userIds) {
         const binding = await bindingFor(admin, userId);
-        if (!hasPushChannel(binding)) continue;
+        if (!hasPushChannel(binding)) {
+          skippedNoBinding++;
+          continue;
+        }
+        boundUsers++;
         const r = await pushUserReminders(admin, appToken, pushplusToken, userId, 20);
         sent += r.sent;
         failed += r.failed;
+        if ((r.sent || 0) > 0) pushedUsers++;
       }
-      return json({ ok: true, created: built.created, sent, failed });
+      return json({ ok: true, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, pushedUsers, created: built.created, sent, failed });
     }
 
     const user = await authedUser(req, admin);

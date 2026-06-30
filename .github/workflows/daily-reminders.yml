@@ -7,16 +7,23 @@ on:
     - cron: "50 8 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: daily-reminder-push
+  cancel-in-progress: false
+
 jobs:
   push-reminders:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Call Supabase reminder function
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
+          set -euo pipefail
           test -n "$CRON_SECRET"
-          curl --fail-with-body -X POST "https://lrvsblbnyismfmithqse.supabase.co/functions/v1/wxpusher" \
+          curl --fail-with-body --show-error --retry 3 --retry-delay 20 --retry-all-errors --max-time 90 \
+            -X POST "https://lrvsblbnyismfmithqse.supabase.co/functions/v1/wxpusher" \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: $CRON_SECRET" \
             --data '{"action":"send-due-reminders"}'

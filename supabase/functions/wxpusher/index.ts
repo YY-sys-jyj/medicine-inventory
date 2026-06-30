@@ -5,6 +5,13 @@ type JsonMap = Record<string, unknown>;
 let pushplusAccessKey = "";
 let pushplusAccessKeyUntil = 0;
 
+const DAY_MS = 86400000;
+const RETENTION_DAYS = {
+  notifications: 90,
+  bindSessions: 30,
+  logs: 365,
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
@@ -61,6 +68,40 @@ function monthsToExpiry(dateText: string) {
 function fmtDate(value: string) {
   if (!value) return "-";
   return String(value).slice(0, 10);
+}
+
+function cutoffIso(days: number) {
+  return new Date(Date.now() - days * DAY_MS).toISOString();
+}
+
+async function cleanupTable(admin: any, table: string, days: number): Promise<any> {
+  try {
+    const { count, error } = await admin
+      .from(table)
+      .delete({ count: "exact" })
+      .lt("created_at", cutoffIso(days));
+    if (error) return { table, days, deleted: 0, error: error.message };
+    return { table, days, deleted: count || 0 };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { table, days, deleted: 0, error: message };
+  }
+}
+
+async function cleanupOldOperationalData(admin: any) {
+  const results: any[] = await Promise.all([
+    cleanupTable(admin, "notification_events", RETENTION_DAYS.notifications),
+    cleanupTable(admin, "pushplus_bind_sessions", RETENTION_DAYS.bindSessions),
+    cleanupTable(admin, "inventory_logs", RETENTION_DAYS.logs),
+    cleanupTable(admin, "payment_logs", RETENTION_DAYS.logs),
+    cleanupTable(admin, "delete_logs", RETENTION_DAYS.logs),
+  ]);
+  return {
+    retentionDays: RETENTION_DAYS,
+    results,
+    deleted: results.reduce((sum, item) => sum + (item.deleted || 0), 0),
+    errors: results.filter((item) => item.error).map((item) => ({ table: item.table, error: item.error })),
+  };
 }
 
 function activeOrGrace(role: any) {
@@ -420,7 +461,8 @@ Deno.serve(async (req) => {
         failed += r.failed;
         if ((r.sent || 0) > 0) pushedUsers++;
       }
-      return json({ ok: true, dateKey: built.dateKey, slot: built.slot, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, pushedUsers, created: built.created, sent, failed });
+      const cleanup = await cleanupOldOperationalData(admin);
+      return json({ ok: true, dateKey: built.dateKey, slot: built.slot, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, pushedUsers, created: built.created, sent, failed, cleanup });
     }
 
     const user = await authedUser(req, admin);

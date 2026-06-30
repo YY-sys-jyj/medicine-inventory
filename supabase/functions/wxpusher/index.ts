@@ -18,22 +18,49 @@ function json(body: JsonMap, status = 200) {
   });
 }
 
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function beijingParts(date = new Date()) {
+  const shifted = new Date(date.getTime() + 8 * 3600000);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+  };
+}
+
+function beijingDateKey(date = new Date()) {
+  const p = beijingParts(date);
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}`;
+}
+
+function reminderSlot(date = new Date()) {
+  return beijingParts(date).hour < 12 ? "am" : "pm";
+}
+
+function dateOnlyMs(dateText: string) {
+  const parts = String(dateText || "").slice(0, 10).split("-").map(Number);
+  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return NaN;
+  return Date.UTC(parts[0], parts[1] - 1, parts[2]);
+}
+
 function daysUntil(dateText: string) {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return Math.ceil((new Date(dateText).getTime() - now.getTime()) / 86400000);
+  const target = dateOnlyMs(dateText);
+  const today = dateOnlyMs(beijingDateKey());
+  if (Number.isNaN(target)) return 9999;
+  return Math.ceil((target - today) / 86400000);
 }
 
 function monthsToExpiry(dateText: string) {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return (new Date(dateText).getTime() - now.getTime()) / 2678400000;
+  return daysUntil(dateText) / 31;
 }
 
 function fmtDate(value: string) {
   if (!value) return "-";
-  const d = new Date(value);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return String(value).slice(0, 10);
 }
 
 function activeOrGrace(role: any) {
@@ -287,7 +314,8 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
 }
 
 async function buildDailyNotifications(admin: any) {
-  const nowKey = new Date().toISOString().slice(0, 10);
+  const nowKey = beijingDateKey();
+  const slot = reminderSlot();
   const { data: roles } = await admin.from("user_roles").select("user_id,role,trial_ends_at,paid_until");
   const activeUsers = new Set((roles || []).filter(activeOrGrace).map((r: any) => r.user_id));
   const { data: products } = await admin.from("products").select("id,user_id,name,batch,expiry_date,stock,last_month_sales");
@@ -298,16 +326,6 @@ async function buildDailyNotifications(admin: any) {
     const d = daysUntil(p.expiry_date);
     const m = monthsToExpiry(p.expiry_date);
     const base = `批号 ${p.batch || "-"} / 效期 ${fmtDate(p.expiry_date)} / 库存 ${p.stock || 0} / 月销 ${p.last_month_sales || 0}`;
-    if (m <= 3) rows.push({
-      user_id: p.user_id,
-      type: "product_red",
-      severity: "red",
-      title: `药品红灯预警：${p.name || ""}`,
-      content: base,
-      source_type: "product",
-      source_key: p.id,
-      dedupe_key: `product:red:${p.id}:${nowKey}`,
-    });
     if (d >= 0 && d <= 3) rows.push({
       user_id: p.user_id,
       type: "product_urgent",
@@ -316,7 +334,17 @@ async function buildDailyNotifications(admin: any) {
       content: `${base} / 剩余 ${d} 天`,
       source_type: "product",
       source_key: p.id,
-      dedupe_key: `product:urgent:${p.id}:${nowKey}`,
+      dedupe_key: `product:urgent:${p.id}:${nowKey}:${slot}`,
+    });
+    else if (m <= 3) rows.push({
+      user_id: p.user_id,
+      type: "product_red",
+      severity: "red",
+      title: `药品红灯预警：${p.name || ""}`,
+      content: base,
+      source_type: "product",
+      source_key: p.id,
+      dedupe_key: `product:red:${p.id}:${nowKey}:${slot}`,
     });
   }
   for (const p of payments || []) {
@@ -330,11 +358,11 @@ async function buildDailyNotifications(admin: any) {
       content: `回款日 ${fmtDate(p.next_date)} / 金额 ${Number(p.amount || 0).toLocaleString()} / 联系人 ${p.contact || "-"} / 剩余 ${d} 天`,
       source_type: "payment",
       source_key: p.id,
-      dedupe_key: `payment:due:${p.id}:${nowKey}`,
+      dedupe_key: `payment:due:${p.id}:${nowKey}:${slot}`,
     });
   }
   if (rows.length) await admin.from("notification_events").upsert(rows, { onConflict: "user_id,dedupe_key", ignoreDuplicates: true });
-  return { created: rows.length, userIds: [...activeUsers] };
+  return { created: rows.length, userIds: [...activeUsers], dateKey: nowKey, slot };
 }
 
 Deno.serve(async (req) => {
@@ -392,7 +420,7 @@ Deno.serve(async (req) => {
         failed += r.failed;
         if ((r.sent || 0) > 0) pushedUsers++;
       }
-      return json({ ok: true, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, pushedUsers, created: built.created, sent, failed });
+      return json({ ok: true, dateKey: built.dateKey, slot: built.slot, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, pushedUsers, created: built.created, sent, failed });
     }
 
     const user = await authedUser(req, admin);

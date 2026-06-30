@@ -7,20 +7,21 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "node scripts/check-static.js",
+    "test": "npm run check"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YY-sys-jyj/rx-inventory.git"
+    "url": "git+https://github.com/YY-sys-jyj/medicine-inventory.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/YY-sys-jyj/rx-inventory/issues"
+    "url": "https://github.com/YY-sys-jyj/medicine-inventory/issues"
   },
-  "homepage": "https://github.com/YY-sys-jyj/rx-inventory#readme",
+  "homepage": "https://github.com/YY-sys-jyj/medicine-inventory#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0"
   }

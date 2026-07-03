@@ -133,6 +133,12 @@ tr:hover td{background:#fafbfc}
 .loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 .admin-section{margin-bottom:24px}
 .admin-section h3{font-size:13px;font-weight:600;margin-bottom:10px}
+.notify-compact{display:grid;gap:8px}
+.notify-compact-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:#fff}
+.notify-compact-main{min-width:0;display:flex;flex-direction:column;gap:3px}
+.notify-compact-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notify-compact-meta{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notify-compact-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
 .chart-bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:6px}.chart-bar-label{width:140px;font-size:11px;text-align:right;color:var(--text2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chart-bar-track{flex:1;background:#f3f4f6;border-radius:3px;height:18px;overflow:hidden;position:relative}.chart-bar-fill{height:100%;border-radius:3px;transition:width .3s;min-width:2px}.chart-bar-fill.blue{background:var(--accent)}.chart-bar-fill.green{background:var(--green)}.chart-bar-fill.yellow{background:var(--yellow)}.chart-bar-fill.red{background:var(--red)}.chart-bar-val{font-size:10px;color:var(--text2);width:50px;flex-shrink:0}.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:768px){.chart-grid{grid-template-columns:1fr}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}.expiry-alert{background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--red);display:flex;align-items:center;gap:8px}.expiry-alert b{color:var(--red)}@media(max-width:768px){.sidebar{width:60px;overflow:hidden}.sidebar-brand h1{font-size:0}.sidebar-brand .user-info{font-size:0}.sidebar-brand{padding:10px 8px}.nav-item{justify-content:center;padding:10px 5px;font-size:0;gap:0}.nav-item svg{width:20px;height:20px}.nav-item.active{background:var(--accent-bg)}.sidebar-footer{text-align:center}.logout-btn{justify-content:center;font-size:0}.logout-btn svg{width:18px;height:18px}.main{margin-left:60px;padding:12px}.stats-bar{grid-template-columns:repeat(2,1fr);gap:6px}.stat-value{font-size:18px}.btn{font-size:10px;padding:4px 8px}th,td{font-size:10px;padding:5px 4px}.chart-grid{grid-template-columns:1fr}.chart-bar-label{width:80px;font-size:10px}}
 @media(max-width:768px){.sidebar{width:60px}}
@@ -199,7 +205,7 @@ var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>
 var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
-var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger';
+var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger',notificationExpanded=false;
 var GRACE_DAYS=3,accessInfo={state:'active',canRead:true,canWrite:true};
 function phoneToEmail(p){if(p.indexOf('@')>=0)return p.trim();return'user_'+p.replace(/\D/g,'')+'@rx.user'}
 function isEmailAddress(v){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
@@ -484,6 +490,11 @@ function selectedNotificationIds(kind){return Array.prototype.slice.call(documen
 function toggleNotificationChecks(box,kind){Array.prototype.slice.call(document.querySelectorAll('.cb-notify-'+kind+':not(:disabled)')).forEach(function(cb){cb.checked=box.checked})}
 function renderNotificationSection(title,kind,list,emptyText){return'<div class="report-section"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3>'+esc(title)+'</h3>'+(list.length?'<button class="btn btn-sm" onclick="markSelectedNotificationsRead(\''+kind+'\')">选中已读</button>':'')+'</div>'+renderNotificationTable(list,emptyText,kind)+'</div>'}
 function renderNotificationTable(list,emptyText,kind){if(!list.length)return'<div class="empty-state"><p>'+esc(emptyText)+'</p></div>';return'<table><thead><tr><th style="width:34px"><input type="checkbox" onchange="toggleNotificationChecks(this,\''+kind+'\')"></th><th>时间</th><th>级别</th><th>标题</th><th>内容</th><th>状态</th><th>操作</th></tr></thead><tbody>'+list.map(function(n){return'<tr><td><input type="checkbox" class="cb-notify cb-notify-'+kind+'" value="'+esc(n.id)+'" '+(n.read_at?'disabled':'')+'></td><td>'+fmtDate(n.created_at)+'</td><td><span class="badge '+notificationBadgeClass(n.severity)+'">'+esc(n.severity||'info')+'</span></td><td><strong>'+esc(n.title||'')+'</strong></td><td>'+esc(n.content||'')+'</td><td>'+(n.read_at?'<span class="badge badge-green">已读</span>':'<span class="badge badge-yellow">未读</span>')+'</td><td><div class="btn-group">'+notificationActions(n)+'</div></td></tr>'}).join('')+'</tbody></table>'}
+function shortText(s,len){s=String(s||'');return s.length>len?s.slice(0,len)+'...':s}
+function notificationSummaryCards(list){var red=list.filter(function(n){return n.severity==='red'}).length,yellow=list.filter(function(n){return n.severity==='yellow'}).length,unread=list.filter(function(n){return!n.read_at}).length,pending=list.filter(function(n){return!n.wxpusher_sent_at&&!n.pushplus_sent_at&&!n.wxpusher_error&&!n.pushplus_error}).length;return'<div class="stats-bar" style="margin-bottom:12px"><div class="stat-card red"><div class="stat-label">红色紧急</div><div class="stat-value">'+red+'</div></div><div class="stat-card yellow"><div class="stat-label">黄色提醒</div><div class="stat-value">'+yellow+'</div></div><div class="stat-card"><div class="stat-label">未读提醒</div><div class="stat-value">'+unread+'</div></div><div class="stat-card"><div class="stat-label">待自动推送</div><div class="stat-value">'+pending+'</div></div></div>'}
+function renderNotificationCompactSection(title,kind,list,emptyText){if(!list.length)return'<div class="report-section"><h3>'+esc(title)+'</h3><div class="empty-state"><p>'+esc(emptyText)+'</p></div></div>';var top=list.slice(0,5),more=list.length-top.length;return'<div class="report-section"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h3>'+esc(title)+' <span style="font-size:11px;color:var(--text3)">共 '+list.length+' 条</span></h3>'+(more?'<button class="btn btn-sm" onclick="toggleNotificationExpanded()">展开全部 '+list.length+' 条</button>':'')+'</div><div class="notify-compact">'+top.map(function(n){return'<div class="notify-compact-item"><div class="notify-compact-main"><div class="notify-compact-title"><span class="badge '+notificationBadgeClass(n.severity)+'">'+esc(n.severity||'info')+'</span> '+esc(n.title||'')+'</div><div class="notify-compact-meta">'+fmtDate(n.created_at)+' · '+esc(shortText(n.content||'',90))+'</div></div><div class="notify-compact-actions">'+(n.read_at?'<span class="badge badge-green">已读</span>':'<button class="btn btn-sm" onclick="markNotificationRead('+n.id+')">已读</button>')+(n.wxpusher_sent_at||n.pushplus_sent_at?'<span class="badge badge-green">已推送</span>':(n.wxpusher_error||n.pushplus_error?'<span class="badge badge-red">推送失败</span>':'<span class="badge badge-yellow">待自动推送</span>'))+'</div></div>'}).join('')+'</div>'+(more?'<p style="font-size:11px;color:var(--text3);margin-top:8px">还有 '+more+' 条已收起，点击展开明细查看。</p>':'')+'</div>'}
+function resetNotificationFilters(){var s=document.getElementById('search-notifications'),f=document.getElementById('filter-notifications');if(s)s.value='';if(f)f.value='all';notificationExpanded=false;renderNotificationLists();toast('筛选已重置')}
+function toggleNotificationExpanded(){notificationExpanded=!notificationExpanded;renderNotificationLists()}
 function renderNotificationLists(){
   var root=document.getElementById('notification-lists');if(!root)return;
   var q=(document.getElementById('search-notifications')?document.getElementById('search-notifications').value:'').toLowerCase().trim();
@@ -492,9 +503,17 @@ function renderNotificationLists(){
   var product=list.filter(function(n){return notificationGroup(n)==='product'});
   var payment=list.filter(function(n){return notificationGroup(n)==='payment'});
   var other=list.filter(function(n){return notificationGroup(n)==='other'});
-  var h=renderNotificationSection('药品效期提醒（红灯优先）','product',product,'没有匹配的药品提醒');
-  h+=renderNotificationSection('医院回款提醒（到期优先）','payment',payment,'没有匹配的医院回款提醒');
-  if(other.length)h+=renderNotificationSection('其他业务提醒','other',other,'没有匹配的其他提醒');
+  var h=notificationSummaryCards(list);
+  h+='<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-sm" onclick="toggleNotificationExpanded()">'+(notificationExpanded?'收起明细':'展开明细')+'</button></div>';
+  if(notificationExpanded){
+    h+=renderNotificationSection('药品效期提醒（红灯优先）','product',product,'没有匹配的药品提醒');
+    h+=renderNotificationSection('医院回款提醒（到期优先）','payment',payment,'没有匹配的医院回款提醒');
+    if(other.length)h+=renderNotificationSection('其他业务提醒','other',other,'没有匹配的其他提醒');
+  }else{
+    h+=renderNotificationCompactSection('药品效期提醒（红灯优先）','product',product,'没有匹配的药品提醒');
+    h+=renderNotificationCompactSection('医院回款提醒（到期优先）','payment',payment,'没有匹配的医院回款提醒');
+    if(other.length)h+=renderNotificationCompactSection('其他业务提醒','other',other,'没有匹配的其他提醒');
+  }
   root.innerHTML=h;
 }
 function buildReminderEvents(){
@@ -626,12 +645,13 @@ async function renderNotifications(){
   h+='</div><div class="report-section"><h3>业务提醒</h3>';
   if(nr.error)h+='<div class="empty-state"><p>提醒读取失败：'+esc(nr.error.message||JSON.stringify(nr.error))+'。请先执行通知中心 SQL。</p></div>';
   else if(!notifications.length)h+='<div class="empty-state"><p>暂无提醒。系统会每天自动检查药品效期和医院回款，也可点击“立即检查提醒”手动刷新一次。</p></div>';
-  else h+='<div class="filter-bar"><input class="search-input" id="search-notifications" placeholder="搜索药品、医院、联系人..." onkeydown="if(event.key===\'Enter\')renderNotificationLists()"><select class="filter-select" id="filter-notifications" onchange="renderNotificationLists()"><option value="all">全部提醒</option><option value="red">红色紧急</option><option value="yellow">黄色提醒</option><option value="unread">未读</option><option value="pushed">已推送</option><option value="product">只看药品</option><option value="payment">只看医院</option></select><button class="btn btn-sm" onclick="renderNotificationLists()">搜索</button><button class="btn btn-sm" onclick="markSelectedNotificationsRead()">批量已读</button><button class="btn btn-sm" onclick="document.getElementById(\'search-notifications\').value=\'\';document.getElementById(\'filter-notifications\').value=\'all\';renderNotificationLists()">清空</button></div><div id="notification-lists"></div>';
+  else h+='<div class="filter-bar"><input class="search-input" id="search-notifications" placeholder="搜索药品、医院、联系人..." onkeydown="if(event.key===\'Enter\')renderNotificationLists()"><select class="filter-select" id="filter-notifications" onchange="renderNotificationLists()"><option value="all">全部提醒</option><option value="red">红色紧急</option><option value="yellow">黄色提醒</option><option value="unread">未读</option><option value="pushed">已推送</option><option value="product">只看药品</option><option value="payment">只看医院</option></select><button class="btn btn-sm" onclick="renderNotificationLists()">搜索</button><button class="btn btn-sm" onclick="markSelectedNotificationsRead()">批量已读</button><button class="btn btn-sm" onclick="resetNotificationFilters()">重置筛选</button><button class="btn btn-sm btn-danger" onclick="clearReadNotifications()">清空已读</button></div><div id="notification-lists"></div>';
   h+='</div>';c.innerHTML=h;if(!nr.error&&notifications.length)renderNotificationLists();await updateNotificationBadge();
 }
 async function markNotificationRead(id){var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id)});if(r.error)toast('操作失败：'+(r.error.message||JSON.stringify(r.error)));else renderNotifications()}
 async function markAllNotificationsRead(){var r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('user_id',currentUser.id)});if(r.error)toast('操作失败：'+(r.error.message||JSON.stringify(r.error)));else{toast('已全部标记为已读');renderNotifications()}}
 async function markSelectedNotificationsRead(kind){var ids=selectedNotificationIds(kind);if(!ids.length)return toast('请先勾选要标记的提醒');showLoading('批量标记已读...');var ok=0,fail=0;for(var i=0;i<ids.length;i++){var id=ids[i],r=await runAuthQuery(function(){return supabaseClient.from('notification_events').update({read_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id)});if(r.error)fail++;else ok++}hideLoading();toast(fail?'已标记 '+ok+' 条，失败 '+fail+' 条':'已标记 '+ok+' 条为已读');renderNotifications()}
+async function clearReadNotifications(){if(!confirm('确认清空所有已读提醒？未读提醒不会删除。'))return;showLoading('清空已读提醒...');var r=await callWxPusherFunction('clear-read-notifications',{});hideLoading();if(r.error)return toast('清空失败：'+r.error);toast('已清空 '+(r.data.deleted||0)+' 条已读提醒');renderNotifications()}
 async function publishAnnouncement(){
   if(!isAdminRole())return toast('只有管理员可以发布通知');
   var title=document.getElementById('ann-title').value.trim(),content=document.getElementById('ann-content').value.trim(),target=document.getElementById('ann-target').value;

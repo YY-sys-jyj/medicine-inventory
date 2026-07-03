@@ -541,6 +541,15 @@ Deno.serve(async (req) => {
       return json({ ok: true, ...result });
     }
 
+    if (action === "clear-read-notifications") {
+      const { count, error } = await admin.from("notification_events")
+        .delete({ count: "exact" })
+        .eq("user_id", user.id)
+        .not("read_at", "is", null);
+      if (error) return json({ error: `清空失败：${error.message}` }, 500);
+      return json({ ok: true, deleted: count || 0 });
+    }
+
     if (action === "broadcast-announcement") {
       if (!role || !["admin", "super_admin"].includes(role.role)) return json({ error: "只有管理员可以群发系统更新" }, 403);
       const id = Number(body.announcement_id);
@@ -585,6 +594,10 @@ Deno.serve(async (req) => {
 
     return json({ error: "未知操作" }, 400);
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : String(err) }, 500);
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("缺少登录授权") || message.includes("登录已过期")) {
+      return json({ error: message }, 401);
+    }
+    return json({ error: message }, 500);
   }
 });

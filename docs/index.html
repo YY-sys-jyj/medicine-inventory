@@ -183,7 +183,7 @@ tr:hover td{background:#fafbfc}
     <div class="panel hidden" id="panel-warnings"><div class="panel-head"><h2>效期预警看板</h2><button class="btn btn-sm" onclick="exportWarningsCSV()">导出Excel</button></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索预警药品..." id="search-warnings" oninput="renderWarnings()"></div><div id="warnings-content"></div></div></div>
     <div class="panel hidden" id="panel-report"><div class="panel-head"><h2>库存动销报告</h2><div class="btn-group"><button class="btn btn-sm" onclick="window.print()">打印</button><button class="btn btn-sm" onclick="exportReportCSV()">导出Excel</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索报告药品..." id="search-report" oninput="renderReport()"></div><div id="report-content"></div></div></div>
     <div class="panel hidden" id="panel-payment"><div class="panel-head"><h2>医院回款台账</h2><div class="btn-group"><button class="btn btn-sm btn-danger hidden" id="btn-batch-del-pay" onclick="batchDeletePayments()">🗑 批量删除</button><button class="btn btn-sm" onclick="downloadTemplate('payment')">📥 模板</button><label class="btn btn-sm" style="cursor:pointer">📤 导入医院<input type="file" accept=".xlsx,.xls,.csv" onchange="importPayments(this)" style="display:none"></label><button class="btn btn-primary btn-sm" onclick="openPaymentModal()">+ 新增医院</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索医院名称..." id="search-payment" oninput="renderPayments()"><select class="filter-select" id="filter-pay-status" onchange="renderPayments()"><option value="all">全部状态</option><option value="due">⚠ 即将到期</option><option value="upcoming">待回款</option><option value="paid">已回款</option></select></div><div id="payment-content"></div></div></div>
-    <div class="panel hidden" id="panel-notifications"><div class="panel-head"><h2>通知中心</h2><div class="btn-group"><button class="btn btn-sm" onclick="generateReminderNotifications(false)">立即检查提醒</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">补发未推送</button><button class="btn btn-sm" onclick="exportNotificationExcel('product')">导出药品Excel</button><button class="btn btn-sm" onclick="exportNotificationExcel('payment')">导出医院Excel</button><button class="btn btn-sm" onclick="markAllNotificationsRead()">全部已读</button><button class="btn btn-sm" onclick="renderNotifications()">刷新</button></div></div><div class="panel-body"><div id="wechat-bind-box"></div><div id="notification-admin-box"></div><div id="notifications-content"></div></div></div>
+    <div class="panel hidden" id="panel-notifications"><div class="panel-head"><h2>通知中心</h2><div class="btn-group" id="notification-head-actions"></div></div><div class="panel-body"><div id="wechat-bind-box"></div><div id="notification-admin-box"></div><div id="notifications-content"></div></div></div>
     <div class="panel hidden" id="panel-logs"><div class="panel-head"><h2>出入库日志</h2><div class="btn-group"><button class="btn btn-sm" onclick="backfillImportLogs()">补写导入日志</button><button class="btn btn-sm" onclick="backfillPaymentLogs()">补写医院日志</button><button class="btn btn-sm" onclick="renderLogs()">刷新</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索药品、医院、动作、详情..." id="search-logs" onkeydown="if(event.key==='Enter')renderLogs()"><button class="btn btn-sm" onclick="renderLogs()">搜索</button><button class="btn btn-sm" onclick="resetLogFilters()">重置搜索</button><button class="btn btn-sm" id="btn-log-toggle" onclick="toggleLogExpanded()">展开明细</button><button class="btn btn-sm btn-danger" onclick="clearAllLogs()">清空日志</button></div><div id="logs-content"></div></div></div>
 	    <div class="panel hidden" id="panel-admin"><div class="panel-head"><h2>系统管理</h2></div><div class="panel-body" id="admin-content"></div></div>
   </main>
@@ -565,6 +565,11 @@ async function loadWechatBinding(){
   var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').select('*').eq('user_id',currentUser.id).maybeSingle()});
   wechatBinding=r.data||null;return r;
 }
+function renderNotificationHeadActions(){
+  var box=document.getElementById('notification-head-actions');if(!box)return;
+  if(isAdminRole())box.innerHTML='<button class="btn btn-sm" onclick="generateReminderNotifications(false)">立即检查提醒</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">补发未推送</button><button class="btn btn-sm" onclick="exportNotificationExcel(\'product\')">导出药品Excel</button><button class="btn btn-sm" onclick="exportNotificationExcel(\'payment\')">导出医院Excel</button><button class="btn btn-sm" onclick="markAllNotificationsRead()">全部已读</button><button class="btn btn-sm" onclick="renderNotifications()">刷新</button>';
+  else box.innerHTML='<button class="btn btn-sm" onclick="markAllNotificationsRead()">全部已读</button><button class="btn btn-sm" onclick="renderNotifications()">刷新</button>';
+}
 async function renderWechatBindBox(){
   var box=document.getElementById('wechat-bind-box');if(!box)return;
   var r=await loadWechatBinding(),uid=wechatBinding&&wechatBinding.wxpusher_uid?wechatBinding.wxpusher_uid:'',pr=wechatBinding&&(wechatBinding.pushplus_receiver||wechatBinding.pushplus_to)?(wechatBinding.pushplus_receiver||wechatBinding.pushplus_to):'';
@@ -573,6 +578,14 @@ async function renderWechatBindBox(){
   var wxState=uid?'<span class="badge '+(wxEnabled?'badge-green':'badge-yellow')+'">'+(wxEnabled?'WxPusher 已绑定':'WxPusher 已暂停')+'</span>':'<span class="badge badge-yellow">WxPusher 未绑定</span>';
   var pushState=pr?'<span class="badge '+(wechatBinding&&wechatBinding.pushplus_enabled?'badge-green':'badge-yellow')+'">PushPlus '+(wechatBinding&&wechatBinding.pushplus_enabled?'已绑定':'已保存但暂停')+'</span>':'<span class="badge badge-yellow">PushPlus 未绑定</span>';
   var pushNick=wechatBinding&&wechatBinding.pushplus_friend_nick?'，'+esc(wechatBinding.pushplus_friend_nick):'';
+  if(!isAdminRole()){
+    var bound=!!(uid||pr),simpleState=bound?'<span class="badge badge-green">微信提醒已绑定</span>':'<span class="badge badge-yellow">微信提醒未绑定</span>';
+    var who=pr?(wechatBinding&&wechatBinding.pushplus_friend_nick?'已绑定：'+esc(wechatBinding.pushplus_friend_nick):'已绑定接收账号'):(uid?'已绑定 WxPusher':'扫码后自动绑定本账号');
+    var unbindBtn=bound?'<button class="btn btn-sm btn-danger" onclick="unbindAllPushChannels()">解除绑定</button>':'';
+    box.innerHTML=err+'<div class="admin-section" style="margin-bottom:18px"><h3>微信提醒绑定</h3><div class="readonly-note">扫码绑定后，系统会在早上 7:50 和下午 4:50 自动把本账号的药品效期、医院回款提醒发到你的微信接收端。换手机或换账号时，先解除绑定，再重新扫码。</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+simpleState+'<span class="badge badge-green">'+who+'</span></div><div class="btn-group"><button class="btn btn-primary btn-sm" onclick="createPushplusBindQr()">生成绑定二维码</button>'+unbindBtn+'</div><div id="pushplus-qr-box" style="margin-top:12px"></div></div>';
+    if(!bound)setTimeout(function(){createPushplusBindQr()},0);
+    return;
+  }
   var wxUnbind=uid?'<button class="btn btn-sm btn-danger" onclick="unbindWxPusher()">解除 WxPusher</button>':'';
   var pushUnbind=pr?'<button class="btn btn-sm btn-danger" onclick="unbindPushPlus()">解除 PushPlus</button>':'';
   box.innerHTML=err+'<div class="admin-section" style="margin-bottom:18px"><h3>微信提醒绑定</h3><div class="readonly-note">客户只需绑定自己的接收账号：打开 WxPusher，复制自己的 UID，粘贴保存后点“发送测试”。以后无需登录网页，系统会在早上 7:50 和下午 4:50 自动把本账号的药品效期、医院回款提醒发到绑定账号。换手机或换接收账号时，先解除旧绑定，再保存新的 UID。</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+wxState+pushState+'</div><div class="form-row"><div class="form-group"><label class="form-label">客户自己的 WxPusher UID</label><input class="form-input" id="wxpusher-uid" placeholder="例如 UID_xxxxx" value="'+esc(uid)+'"></div><div class="form-group"><label class="form-label">WxPusher 状态</label><select class="form-input" id="wxpusher-enabled"><option value="true" '+(wxEnabled?'selected':'')+'>开启 WxPusher</option><option value="false" '+(!wxEnabled?'selected':'')+'>暂停 WxPusher</option></select></div></div><div class="btn-group" style="margin-bottom:14px"><a class="btn btn-sm" href="https://wxpusher.zjiecode.com/" target="_blank" rel="noopener">下载/打开 WxPusher</a><button class="btn btn-primary btn-sm" onclick="saveWechatBinding()">保存绑定</button><button class="btn btn-sm" onclick="sendWechatTest()">发送测试</button>'+wxUnbind+'</div><div class="form-row"><div class="form-group"><label class="form-label">PushPlus 接收令牌（备用通道）</label><input class="form-input" id="pushplus-receiver" placeholder="生成绑定二维码后会自动填入" value="'+esc(pr)+'"></div><div class="form-group"><label class="form-label">PushPlus 状态</label><select class="form-input" id="pushplus-enabled"><option value="true" '+(wechatBinding&&wechatBinding.pushplus_enabled?'selected':'')+'>开启 PushPlus</option><option value="false" '+(!wechatBinding||!wechatBinding.pushplus_enabled?'selected':'')+'>暂停 PushPlus</option></select></div></div><div class="btn-group"><button class="btn btn-sm" onclick="createPushplusBindQr()">生成 PushPlus 备用二维码</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">补发未推送</button>'+pushUnbind+'</div><div id="pushplus-qr-box" style="margin-top:12px"></div><p style="font-size:12px;color:'+(pr?'var(--success)':'var(--text3)')+';margin-top:8px">'+(pr?'PushPlus 备用通道已绑定'+pushNick+'。':'PushPlus 是备用线路；如 WxPusher 收不到，可让客户扫码绑定备用通道。')+'</p></div>';
@@ -614,6 +627,16 @@ async function unbindPushPlus(){
   var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});
   hideLoading();if(r.error)return toast('解除失败：'+(r.error.message||JSON.stringify(r.error)));
   await renderWechatBindBox();toast('PushPlus 绑定已解除');
+}
+async function unbindAllPushChannels(){
+  if(!currentUser)return;
+  if(!wechatBinding||(!wechatBinding.wxpusher_uid&&!wechatBinding.pushplus_receiver&&!wechatBinding.pushplus_to))return toast('当前没有绑定微信提醒');
+  if(!confirm('确认解除当前微信提醒绑定？解除后将不再收到自动微信提醒，重新扫码即可恢复。'))return;
+  showLoading('解除微信提醒绑定...');
+  var row={wxpusher_uid:'',enabled:false,pushplus_receiver:'',pushplus_enabled:false,pushplus_bind_code:'',pushplus_friend_id:'',pushplus_friend_nick:'',pushplus_bound_at:null,updated_at:new Date().toISOString()};
+  var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});
+  hideLoading();if(r.error)return toast('解除失败：'+(r.error.message||JSON.stringify(r.error)));
+  await renderWechatBindBox();toast('微信提醒绑定已解除');
 }
 async function callWxPusherFunction(action,payload){
   var gs=await supabaseClient.auth.getSession(),token=gs.data&&gs.data.session&&gs.data.session.access_token;
@@ -659,6 +682,7 @@ function renderNotificationAdminBox(){
 }
 async function renderNotifications(){
   if(accessInfo&&accessInfo.state==='locked'){renderLockedAccess();return}
+  renderNotificationHeadActions();
   await renderWechatBindBox();
   renderNotificationAdminBox();
   var c=document.getElementById('notifications-content');c.innerHTML='<div class="loading-spinner"></div>';

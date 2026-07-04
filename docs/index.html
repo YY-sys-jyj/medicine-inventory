@@ -216,6 +216,21 @@ tr:hover td{background:#f8fbff}
 ::selection{background:#dbeafe;color:#0f172a}
 @media(max-width:1024px){.workspace-summary{grid-template-columns:1fr 1fr}.workspace-card.primary{grid-column:1/-1}}
 @media(max-width:768px){.main{padding:12px}.workspace-summary{grid-template-columns:1fr;gap:8px}.workspace-card{padding:12px}.panel-body{padding:12px}.btn:hover,.stat-card:hover,.notify-compact-item:hover{transform:none}.stat-card{padding:12px}.stat-value{font-size:20px}}
+.workspace-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.workspace-mini-list{display:grid;gap:6px;margin-top:12px}
+.workspace-mini-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);line-height:1.45}
+.workspace-mini-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(37,99,235,.1);flex-shrink:0}
+.workspace-mini-dot.red{background:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,.1)}
+.workspace-mini-dot.yellow{background:var(--yellow);box-shadow:0 0 0 4px rgba(217,119,6,.12)}
+.sync-pill{display:inline-flex;align-items:center;gap:5px;border:1px solid #d8e1ec;border-radius:999px;background:#fff;color:var(--text2);font-size:11px;padding:4px 9px}
+.sync-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px}
+.empty-state-icon{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent-bg);color:var(--accent);font-weight:800}
+.empty-state-title{font-size:14px;font-weight:700;color:#111827}
+.empty-state-copy{font-size:12px;color:var(--text2);max-width:420px;line-height:1.65}
+.empty-state-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid rgba(37,99,235,.55);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 </style>
 
 </head>
@@ -278,7 +293,7 @@ var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>
 var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
-var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger',notificationExpanded=false,logExpanded=false;
+var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger',notificationExpanded=false,logExpanded=false,lastDataRefresh=null;
 var GRACE_DAYS=3,accessInfo={state:'active',canRead:true,canWrite:true};
 function phoneToEmail(p){if(p.indexOf('@')>=0)return p.trim();return'user_'+p.replace(/\D/g,'')+'@rx.user'}
 function isEmailAddress(v){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
@@ -501,7 +516,7 @@ async function handleLogin(){
 }
 async function handleLogout(){
   if(supabaseClient)await supabaseClient.auth.signOut();
-  currentUser=null;userRole=null;products=[];payments=[];notifications=[];announcements=[];wechatBinding=null;if(pushplusBindTimer){clearInterval(pushplusBindTimer);pushplusBindTimer=null}
+  currentUser=null;userRole=null;products=[];payments=[];notifications=[];announcements=[];wechatBinding=null;lastDataRefresh=null;if(pushplusBindTimer){clearInterval(pushplusBindTimer);pushplusBindTimer=null}
   document.getElementById('app-container').classList.add('hidden');document.getElementById('login-page').classList.remove('hidden');
   document.getElementById('login-password').value='';document.getElementById('login-btn').innerHTML='登 录';document.getElementById('login-btn').disabled=false;
   var items=document.querySelectorAll('.admin-only');for(var i=0;i<items.length;i++)items[i].style.display='none';
@@ -517,6 +532,7 @@ async function loadData(){
   var r2=await withTimeout(runAuthQuery(function(){return supabaseClient.from('payments').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false})}),12000,'医院回款读取超时，请检查手机网络后重试');
   if(r2.error){hideLoading();if(isAuthExpiredError(r2.error)){handleLogout();toast('会话已过期，请重新登录')}else toast('医院回款读取失败：'+(r2.error.message||JSON.stringify(r2.error)));return}
   if(r2.data)payments=r2.data;
+  lastDataRefresh=new Date();
   hideLoading();refresh();renderLedger();
   generateReminderNotifications(true).then(function(){return updateNotificationBadge()}).catch(function(){});
 }
@@ -802,8 +818,17 @@ function renderWorkspaceSummary(m){
   else if(m.paymentDue>0){title='有 '+m.paymentDue+' 家医院回款临近';copy='建议今天先核对联系人、付款流程和预计回款日，减少遗漏。';action='<button class="btn btn-primary btn-sm" onclick="switchTab(\'payment\')">查看回款</button>';tone='yellow'}
   else if(m.yellow>0){title='有 '+m.yellow+' 个黄灯品种可提前安排';copy='现在处理还不急，但提前推动动销会让后面轻松很多。';action='<button class="btn btn-sm" onclick="switchTab(\'warnings\')">查看黄灯</button>';tone='yellow'}
   var access=accessInfo&&accessInfo.message?accessInfo.message:(isAdminRole()?'管理员模式':'正常使用中');
-  el.innerHTML='<div class="workspace-card primary"><div class="workspace-kicker">'+greet+(name?' · '+esc(name):'')+'</div><div class="workspace-title">'+esc(title)+'</div><div class="workspace-copy">'+esc(copy)+'</div><div class="workspace-link">'+action+'</div></div><div class="workspace-card"><div class="workspace-kicker">7天内到期</div><div class="workspace-metric '+(m.d7?'red':'green')+'">'+m.d7+'</div><div class="workspace-copy">'+(m.d7?'需要提前确认出库节奏':'暂无近效期压力')+'</div></div><div class="workspace-card"><div class="workspace-kicker">待回款到期</div><div class="workspace-metric '+(m.paymentDue?'yellow':'green')+'">'+m.paymentDue+'</div><div class="workspace-copy">待回款 '+(m.paymentTotal/10000).toFixed(1)+' 万</div></div><div class="workspace-card"><div class="workspace-kicker">当前状态</div><div class="workspace-metric '+tone+'">'+(tone==='green'?'良好':tone==='yellow'?'关注':'紧急')+'</div><div class="workspace-copy">'+esc(access)+'</div></div>';
+  var urgent=products.slice().sort(function(a,b){return daysUntil(a.expiry_date||a.expiryDate)-daysUntil(b.expiry_date||b.expiryDate)}).filter(function(p){return daysUntil(p.expiry_date||p.expiryDate)<=7}).slice(0,2);
+  var duePay=payments.slice().filter(function(p){return!p.paid&&daysUntil(p.next_date||p.nextDate)<=7}).sort(function(a,b){return daysUntil(a.next_date||a.nextDate)-daysUntil(b.next_date||b.nextDate)}).slice(0,2);
+  var tasks=[];
+  urgent.forEach(function(p){tasks.push({tone:daysUntil(p.expiry_date||p.expiryDate)<=3?'red':'yellow',text:'核对 '+(p.name||'药品')+'，剩余 '+daysUntil(p.expiry_date||p.expiryDate)+' 天'})});
+  duePay.forEach(function(p){tasks.push({tone:daysUntil(p.next_date||p.nextDate)<=0?'red':'yellow',text:'跟进 '+(p.hospital||'医院')+' 回款，剩余 '+daysUntil(p.next_date||p.nextDate)+' 天'})});
+  if(!tasks.length)tasks.push({tone:'',text:'今天没有强制紧急项，可以补录库存、核对回款或整理日志'});
+  var taskHtml='<div class="workspace-mini-list">'+tasks.slice(0,3).map(function(t){return'<div class="workspace-mini-item"><span class="workspace-mini-dot '+t.tone+'"></span><span>'+esc(t.text)+'</span></div>'}).join('')+'</div>';
+  var sync=lastDataRefresh?('同步 '+String(lastDataRefresh.getHours()).padStart(2,'0')+':'+String(lastDataRefresh.getMinutes()).padStart(2,'0')):'等待同步';
+  el.innerHTML='<div class="workspace-card primary"><div class="workspace-kicker">'+greet+(name?' · '+esc(name):'')+'</div><div class="workspace-title">'+esc(title)+'</div><div class="workspace-copy">'+esc(copy)+'</div>'+taskHtml+'<div class="workspace-actions">'+action+'<span class="sync-pill">'+sync+'</span></div></div><div class="workspace-card"><div class="workspace-kicker">7天内到期</div><div class="workspace-metric '+(m.d7?'red':'green')+'">'+m.d7+'</div><div class="workspace-copy">'+(m.d7?'需要提前确认出库节奏':'暂无近效期压力')+'</div></div><div class="workspace-card"><div class="workspace-kicker">待回款到期</div><div class="workspace-metric '+(m.paymentDue?'yellow':'green')+'">'+m.paymentDue+'</div><div class="workspace-copy">待回款 '+(m.paymentTotal/10000).toFixed(1)+' 万</div></div><div class="workspace-card"><div class="workspace-kicker">当前状态</div><div class="workspace-metric '+tone+'">'+(tone==='green'?'良好':tone==='yellow'?'关注':'紧急')+'</div><div class="workspace-copy">'+esc(access)+'</div></div>';
 }
+function emptyActionState(title,copy,actions,icon){return'<div class="empty-state"><div class="empty-state-icon">'+esc(icon||'i')+'</div><div class="empty-state-title">'+esc(title)+'</div><div class="empty-state-copy">'+esc(copy||'')+'</div>'+(actions?'<div class="empty-state-actions">'+actions+'</div>':'')+'</div>'}
 function renderStats(){
   var rC=products.filter(function(p){return warnLevel(p)==='red'}).length,yC=products.filter(function(p){return warnLevel(p)==='yellow'}).length;
     var d3=products.filter(function(p){var d=daysUntil(p.expiry_date||p.expiryDate);return d>=0&&d<=3}).length;var d7=products.filter(function(p){var d=daysUntil(p.expiry_date||p.expiryDate);return d>=0&&d<=7}).length;
@@ -823,7 +848,7 @@ function renderLedger(){
   list.sort(function(a,b){var o={red:0,yellow:1,green:2},da=o[warnLevel(a)],db=o[warnLevel(b)];return da!==db?da-db:new Date(a.expiry_date||a.expiryDate)-new Date(b.expiry_date||b.expiryDate)});
   var c=document.getElementById('ledger-content');
   var prefix=readOnlyNote();
-  var urgent=list.filter(function(p){var d=daysUntil(p.expiry_date||p.expiryDate);return d>=0&&d<=7});if(urgent.length){c.innerHTML='<div class="expiry-alert"><span>⏰</span><span><b>'+urgent.length+'</b> 个品种 <b>7天内</b>到期：'+urgent.map(function(p){return esc(p.name||'')+'('+daysUntil(p.expiry_date||p.expiryDate)+'天)'}).join(' · ')+'</span></div>'}else{c.innerHTML=''};if(!list.length){c.innerHTML='<div class="empty-state"><p>暂无数据</p></div>';return}
+  var urgent=list.filter(function(p){var d=daysUntil(p.expiry_date||p.expiryDate);return d>=0&&d<=7});if(urgent.length){c.innerHTML='<div class="expiry-alert"><span>⏰</span><span><b>'+urgent.length+'</b> 个品种 <b>7天内</b>到期：'+urgent.map(function(p){return esc(p.name||'')+'('+daysUntil(p.expiry_date||p.expiryDate)+'天)'}).join(' · ')+'</span></div>'}else{c.innerHTML=''};if(!list.length){var hasFilter=s||fs!=='all',actions=hasFilter?'<button class="btn btn-sm" onclick="document.getElementById(\'search-ledger\').value=\'\';document.getElementById(\'filter-status\').value=\'all\';renderLedger()">重置筛选</button>':(canWrite()?'<button class="btn btn-primary btn-sm" onclick="openProductModal()">新增第一个品种</button><button class="btn btn-sm" onclick="seedDemoData()">加载演示数据</button>':'');c.innerHTML=prefix+emptyActionState(hasFilter?'没有匹配的品种':'还没有库存数据',hasFilter?'换个关键词或状态再试试。':'先新增一个品种，或者导入 Excel 模板，系统就能开始计算效期预警和周转。',actions,'药');return}
   c.innerHTML=prefix+c.innerHTML+'<table><thead><tr><th style="width:30px"><input type="checkbox" onclick="toggleAll(this)" title="全选" '+(canWrite()?'':'disabled')+'></th><th>品种</th><th>批号</th><th>有效期</th><th>剩余</th><th>库存</th><th>月销</th><th>日均</th><th>周转天</th><th>状态</th><th>操作</th></tr></thead><tbody>'+list.map(function(p){
     var lv=warnLevel(p),m=monthsToExpiry(p),ds=dailySales(p),to=turnoverDays(p),slow=isSlow(p),st={red:'红灯',yellow:'黄灯',green:'正常'}[lv];
     var actions=canWrite()?'<div class="btn-group"><button class="btn btn-sm" onclick="openStockModal(\''+p.id+'\',\''+esc(p.name||'')+'\','+(p.stock||0)+',\'in\')" style="color:var(--green)">+入库</button><button class="btn btn-sm" onclick="openStockModal(\''+p.id+'\',\''+esc(p.name||'')+'\','+(p.stock||0)+',\'out\')" style="color:var(--red)">-出库</button><button class="btn btn-sm" onclick="openProductModal(\''+p.id+'\')">编辑</button><button class="btn btn-sm btn-danger" onclick="deleteProduct(\''+p.id+'\')">删除</button></div>':'<span class="badge badge-yellow">只读</span>';
@@ -836,10 +861,10 @@ function renderWarnings(){
   var reds=base.filter(function(p){return warnLevel(p)==='red'}),yels=base.filter(function(p){return warnLevel(p)==='yellow'&&isSlow(p)}),c=document.getElementById('warnings-content'),h='';
   h+=readOnlyNote();
   h+='<div class="warn-section"><div class="warn-section-title red">🔴 红灯预警 - 效期3个月 ('+reds.length+'个)</div><div class="warn-list">';
-  if(!reds.length)h+='<div class="empty-state"><p>暂无红灯预警</p></div>';
+  if(!reds.length)h+=emptyActionState('暂无红灯预警','目前没有 3 个月内到期的高风险品种。',products.length?'<button class="btn btn-sm" onclick="switchTab(\'ledger\')">查看台账</button>':'','稳');
   else reds.forEach(function(p){h+='<div class="warn-item"><div class="warn-info"><span class="warn-name">'+esc(p.name||'')+'</span><span class="warn-meta">批号 '+esc(p.batch||'')+' / 效期 '+fmtDate(p.expiry_date||p.expiryDate)+' / 库存 '+(p.stock||0)+' / 剩 '+monthsToExpiry(p).toFixed(1)+'月</span></div><div class="warn-action"><span class="badge badge-red">立即汇报 · 优先使用</span></div></div>'});
   h+='</div></div><div class="warn-section"><div class="warn-section-title yellow">🟡 黄灯预警 - 效期3-6月+动销慢 ('+yels.length+'个)</div><div class="warn-list">';
-  if(!yels.length)h+='<div class="empty-state"><p>暂无黄灯预警</p></div>';
+  if(!yels.length)h+=emptyActionState('暂无黄灯预警','当前没有 3-6 个月内且动销偏慢的品种。',products.length?'<button class="btn btn-sm" onclick="switchTab(\'report\')">查看动销报告</button>':'','好');
   else yels.forEach(function(p){h+='<div class="warn-item"><div class="warn-info"><span class="warn-name">'+esc(p.name||'')+'</span><span class="warn-meta">批号 '+esc(p.batch||'')+' / 效期 '+fmtDate(p.expiry_date||p.expiryDate)+' / 库存 '+(p.stock||0)+' / 月销 '+(p.last_month_sales||p.lastMonthSales||0)+'</span></div><div class="warn-action"><span class="badge badge-yellow">建议促销推广</span></div></div>'});
   h+='</div></div>';c.innerHTML=h;
 }
@@ -885,7 +910,7 @@ function renderPayments(){
   if(s)list=list.filter(function(p){return(p.hospital||'').toLowerCase().indexOf(s)>=0});
   list.sort(function(a,b){var o={due:0,upcoming:1,paid:2},sa=o[payStatus(a)],sb=o[payStatus(b)];return sa!==sb?sa-sb:new Date(a.next_date||a.nextDate)-new Date(b.next_date||b.nextDate)});
   var c=document.getElementById('payment-content');
-  if(!list.length){c.innerHTML='<div class="empty-state"><p>暂无医院记录</p></div>';return}
+  if(!list.length){var hasPayFilter=s||fs!=='all',payActions=hasPayFilter?'<button class="btn btn-sm" onclick="document.getElementById(\'search-payment\').value=\'\';document.getElementById(\'filter-pay-status\').value=\'all\';renderPayments()">重置筛选</button>':(canWrite()?'<button class="btn btn-primary btn-sm" onclick="openPaymentModal()">新增医院回款</button><button class="btn btn-sm" onclick="downloadTemplate(\'payment\')">下载导入模板</button>':'');c.innerHTML=readOnlyNote()+emptyActionState(hasPayFilter?'没有匹配的医院':'还没有医院回款记录',hasPayFilter?'换个医院名称或状态再搜索。':'先录入一家医院，系统会自动帮你跟踪回款时间和提醒。',payActions,'款');return}
   c.innerHTML=readOnlyNote()+'<table><thead><tr><th style="width:30px"><input type="checkbox" onclick="toggleAll(this)" title="全选" '+(canWrite()?'':'disabled')+'></th><th>医院</th><th>周期</th><th>回款日</th><th>剩余</th><th>金额</th><th>联系人</th><th>流程</th><th>状态</th><th>操作</th></tr></thead><tbody>'+list.map(function(p){
     var st=payStatus(p),d=daysUntil(p.next_date||p.nextDate),stT={due:'即将到期',upcoming:'待回款',paid:'已回款'}[st];
     var stB=st==='due'?'badge-red':st==='paid'?'badge-green':'badge-yellow';

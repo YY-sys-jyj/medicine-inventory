@@ -144,6 +144,78 @@ tr:hover td{background:#fafbfc}
 @media(max-width:768px){.sidebar{width:60px}}
 @media print{.sidebar,.btn,.modal-overlay,.filter-bar,.stats-bar{display:none!important}.main{margin-left:0;padding:0}.panel{box-shadow:none;border:none}}
 .pw-strength{display:none;margin-top:4px}.pw-strength-track{height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;margin-bottom:3px}.pw-strength-fill{height:100%;border-radius:2px;transition:width .3s,background .3s;width:0}.pw-strength-text{font-size:11px}
+
+/* Experience polish: quiet, dense, business-first visual system */
+:root{--bg:#eef3f7;--surface:#fff;--surface-soft:#f8fafc;--border:#dce5ef;--text:#172033;--text2:#607086;--text3:#97a4b7;--accent:#2563eb;--accent-bg:#eaf2ff;--accent-soft:#f3f7ff;--red:#dc2626;--red-bg:#fff1f2;--yellow:#d97706;--yellow-bg:#fffbeb;--green:#159447;--green-bg:#ecfdf3;--radius:8px;--shadow:0 8px 22px rgba(15,23,42,.06);--shadow-soft:0 1px 2px rgba(15,23,42,.05);--sidebar-w:230px}
+body{background:linear-gradient(180deg,#f6f9fc 0%,var(--bg) 260px);letter-spacing:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+th,.login-card h1,.sidebar-brand h1{letter-spacing:0}
+.login-page{background:linear-gradient(135deg,#eef7f4 0%,#f7f9fc 48%,#f5f7ed 100%)}
+.login-card{position:relative;overflow:hidden;border-color:#d8e1ec;border-radius:8px;box-shadow:0 22px 60px rgba(15,23,42,.12)}
+.login-card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),#0f766e,#d97706)}
+.login-card h1{font-size:22px;color:#101827}
+.login-card .login-sub{font-size:13px;color:var(--text2)}
+.sidebar{background:rgba(255,255,255,.94);box-shadow:1px 0 0 rgba(15,23,42,.04);backdrop-filter:saturate(1.1) blur(8px)}
+.sidebar-brand{padding:18px 18px 14px;background:linear-gradient(180deg,#fff,#fbfdff)}
+.sidebar-brand h1{font-size:16px;color:#0f172a}
+.sidebar-brand .user-info{margin-top:6px;color:var(--text2)}
+.nav-item{min-height:38px;border:1px solid transparent;border-radius:8px;font-size:13px;transition:background .16s,color .16s,border-color .16s,transform .16s}
+.nav-item:hover{background:#f7f9fc;border-color:#edf2f7;transform:translateX(1px)}
+.nav-item.active{background:linear-gradient(90deg,#edf5ff,#f8fbff);border-color:#d9e7ff;color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.nav-badge{box-shadow:0 4px 12px rgba(220,38,38,.18)}
+.sidebar-footer{background:#fbfdff}
+.main{padding:24px 30px 34px}
+.workspace-summary{display:grid;grid-template-columns:minmax(260px,1.4fr) repeat(3,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.workspace-card{background:linear-gradient(180deg,#fff,#fbfdff);border:1px solid var(--border);border-radius:8px;padding:15px 16px;box-shadow:var(--shadow);min-width:0}
+.workspace-card.primary{border-color:#cfe0ff;background:linear-gradient(135deg,#ffffff 0%,#f3f7ff 100%)}
+.workspace-kicker{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px}
+.workspace-title{font-size:17px;font-weight:700;color:#101827;line-height:1.35}
+.workspace-copy{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.6}
+.workspace-metric{font-size:22px;font-weight:800;color:#101827;line-height:1.2}
+.workspace-metric.red{color:var(--red)}.workspace-metric.yellow{color:var(--yellow)}.workspace-metric.green{color:var(--green)}
+.workspace-link{margin-top:9px;display:inline-flex}
+.stats-bar{gap:14px;margin-bottom:18px}
+.stat-card{position:relative;overflow:hidden;border-color:#dde6f0;border-radius:8px;background:linear-gradient(180deg,#fff,#fbfcfe);box-shadow:var(--shadow-soft);transition:box-shadow .16s,transform .16s,border-color .16s}
+.stat-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#cbd5e1}
+.stat-card.red::before{background:var(--red)}.stat-card.yellow::before{background:var(--yellow)}.stat-card.green::before{background:var(--green)}
+.stat-card:hover{transform:translateY(-1px);box-shadow:var(--shadow);border-color:#cbd8e6}
+.stat-label{font-weight:650;color:var(--text2)}
+.stat-value{font-size:26px;color:#111827}
+.panel,.access-card,.admin-section{border-color:#dbe4ee;border-radius:8px;box-shadow:var(--shadow);background:rgba(255,255,255,.96)}
+.panel-head{padding:15px 18px;background:linear-gradient(180deg,#fff,#fbfdff)}
+.panel-head h2{font-size:15px;color:#111827}
+.panel-body{padding:18px;overflow-x:auto}
+.btn{border-color:#d8e1ec;background:#fff;border-radius:8px;color:#1f2937;box-shadow:0 1px 1px rgba(15,23,42,.03);transition:background .16s,border-color .16s,box-shadow .16s,transform .16s,color .16s}
+.btn:hover{background:#f8fafc;border-color:#c9d6e5;box-shadow:0 4px 10px rgba(15,23,42,.06);transform:translateY(-1px)}
+.btn-primary{background:linear-gradient(180deg,#2f6df0,#2563eb);border-color:#245ddb;box-shadow:0 8px 18px rgba(37,99,235,.18)}
+.btn-primary:hover{background:linear-gradient(180deg,#2563eb,#1d4ed8);border-color:#1d4ed8}
+.btn-danger{background:#fff;color:var(--red);border-color:#fecdd3}
+.btn-warn{background:#fff8e8}
+.btn-group{flex-wrap:wrap}
+.search-input,.filter-select,.form-input,.form-textarea{border-color:#d8e1ec;border-radius:8px;background:#fff;transition:border-color .16s,box-shadow .16s,background .16s}
+.search-input:focus,.filter-select:focus,.form-input:focus,.form-textarea:focus,.login-card .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12);background:#fff}
+table{border-collapse:separate;border-spacing:0}
+th{position:sticky;top:0;z-index:1;background:#f8fafc;border-bottom:1px solid #dbe4ee;color:#526176;text-transform:none}
+td{border-bottom:1px solid #e8eef5}
+tr:hover td{background:#f8fbff}
+.badge{border-radius:999px;font-weight:700}
+.badge-red{background:#fff1f2;color:#dc2626}.badge-yellow{background:#fff7df;color:#b45309}.badge-green{background:#eafaf0;color:#15803d}
+.warn-list{background:#fff}.warn-item,.notify-compact-item{border-color:#e2eaf3;border-radius:8px;background:linear-gradient(180deg,#fff,#fcfdff)}
+.notify-compact-item{transition:border-color .16s,box-shadow .16s,transform .16s}.notify-compact-item:hover{border-color:#cad8e8;box-shadow:var(--shadow-soft);transform:translateY(-1px)}
+.report-section h3{font-size:14px;color:#101827}
+.empty-state{border:1px dashed #dbe4ee;border-radius:8px;background:#fbfdff}
+.toast{right:22px;bottom:22px;display:flex;align-items:center;gap:10px;max-width:min(460px,calc(100vw - 28px));padding:11px 14px;border-radius:8px;background:#101827;box-shadow:0 18px 42px rgba(15,23,42,.22);overflow:hidden;animation:toastIn .18s ease-out}
+.toast.success{background:#0f5132}.toast.error{background:#7f1d1d}.toast.warn{background:#78350f}
+.toast-dot{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.14);flex-shrink:0}
+.toast-bar{position:absolute;left:0;bottom:0;height:3px;background:rgba(255,255,255,.45);animation:toastBar 2.4s linear forwards}
+@keyframes toastIn{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes toastBar{from{width:100%}to{width:0}}
+.modal-overlay{background:rgba(15,23,42,.42);backdrop-filter:blur(3px)}
+.modal{border:1px solid rgba(255,255,255,.7);border-radius:8px;box-shadow:0 24px 70px rgba(15,23,42,.22)}
+.loading-overlay{background:rgba(248,250,252,.76);backdrop-filter:blur(4px)}
+.loading-spinner{border-color:#d8e1ec;border-top-color:var(--accent)}
+::selection{background:#dbeafe;color:#0f172a}
+@media(max-width:1024px){.workspace-summary{grid-template-columns:1fr 1fr}.workspace-card.primary{grid-column:1/-1}}
+@media(max-width:768px){.main{padding:12px}.workspace-summary{grid-template-columns:1fr;gap:8px}.workspace-card{padding:12px}.panel-body{padding:12px}.btn:hover,.stat-card:hover,.notify-compact-item:hover{transform:none}.stat-card{padding:12px}.stat-value{font-size:20px}}
 </style>
 
 </head>
@@ -178,6 +250,7 @@ tr:hover td{background:#fafbfc}
   </aside>
   <main class="main">
     <div class="trial-banner hidden" id="trial-banner"><span id="trial-text"></span><button class="trial-btn hidden" id="trial-btn" onclick="handlePayment()">立即续费 ¥2/月</button></div>
+    <div class="workspace-summary" id="workspace-summary"></div>
     <div class="stats-bar" id="stats-bar"></div>
     <div class="panel" id="panel-ledger"><div class="panel-head"><h2>品种库存台账</h2><div class="btn-group"><button class="btn btn-sm btn-danger hidden" id="btn-batch-del-prod" onclick="batchDeleteProducts()">🗑 批量删除</button><button class="btn btn-sm" onclick="seedDemoData()">演示数据</button><button class="btn btn-sm btn-danger" onclick="clearDemoData()">清除演示</button><button class="btn btn-sm" onclick="downloadTemplate('product')">📥 模板</button><label class="btn btn-sm" style="cursor:pointer">📤 导入药品<input type="file" accept=".xlsx,.xls,.csv" onchange="importProducts(this)" style="display:none"></label><button class="btn btn-primary btn-sm" onclick="openProductModal()">+ 新增品种</button><button class="btn btn-sm" onclick="openQuickStock()" style="color:var(--accent)">⚡ 快速出入库</button></div></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索品种名称..." id="search-ledger" oninput="renderLedger()"><select class="filter-select" id="filter-status" onchange="renderLedger()"><option value="all">全部状态</option><option value="red">🔴 红灯预警</option><option value="yellow">🟡 黄灯预警</option><option value="green">🟢 正常</option></select></div><div id="ledger-content"></div></div></div>
     <div class="panel hidden" id="panel-warnings"><div class="panel-head"><h2>效期预警看板</h2><button class="btn btn-sm" onclick="exportWarningsCSV()">导出Excel</button></div><div class="panel-body"><div class="filter-bar"><input class="search-input" placeholder="搜索预警药品..." id="search-warnings" oninput="renderWarnings()"></div><div id="warnings-content"></div></div></div>
@@ -251,6 +324,7 @@ function readOnlyNote(){
 }
 function renderLockedAccess(){
   document.getElementById('stats-bar').innerHTML='';
+  var ws=document.getElementById('workspace-summary');if(ws)ws.innerHTML='';
   var html='<div class="access-card"><h2>服务已暂停</h2><p>试用期和 '+GRACE_DAYS+' 天只读宽限期均已结束。你的库存、医院回款和日志数据仍然保留，续费 ¥2/月 后即可恢复查看和编辑。</p><div class="access-actions"><button class="btn btn-primary" onclick="handlePayment()">立即续费 ¥2/月</button><button class="btn" onclick="handleLogout()">退出登录</button></div></div>';
   ['ledger-content','warnings-content','report-content','payment-content','logs-content'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=html});
   ['nav-warn-badge','nav-pay-badge','nav-notify-badge'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.add('hidden')});
@@ -305,6 +379,7 @@ function enterApp(phone){
   if(userRole==='super_admin'||userRole==='admin'){
     var items=document.querySelectorAll('.admin-only');for(var i=0;i<items.length;i++)items[i].style.display='flex';
   }
+  setTimeout(function(){toast('已进入系统，今日重点已整理好')},300);
   updateTrialBanner();loadData();
 }
 async function updateTrialBanner(){
@@ -714,11 +789,27 @@ async function publishAnnouncement(){
   var id=r.data&&r.data[0]&&r.data[0].id;if(id)callWxPusherFunction('broadcast-announcement',{announcement_id:id}).catch(function(){});
   document.getElementById('ann-title').value='';document.getElementById('ann-content').value='';toast('通知已发布');renderNotifications();
 }
+function renderWorkspaceSummary(m){
+  var el=document.getElementById('workspace-summary');if(!el)return;
+  var hour=new Date().getHours(),greet=hour<11?'早上好':hour<18?'下午好':'晚上好';
+  var name=(document.getElementById('sidebar-phone')&&document.getElementById('sidebar-phone').textContent)||'';
+  var title='库存运行平稳，继续保持';
+  var copy='当前没有特别紧急的事项，可以按计划维护库存、核对医院回款。';
+  var action='<button class="btn btn-sm" onclick="switchTab(\'ledger\')">查看台账</button>';
+  var tone='green';
+  if(m.d3>0){title='先处理 '+m.d3+' 个 3天内到期品种';copy='这些品种已经进入最高优先级，建议先核对库存、客户需求和出库安排。';action='<button class="btn btn-primary btn-sm" onclick="switchTab(\'warnings\')">查看预警</button>';tone='red'}
+  else if(m.red>0){title='有 '+m.red+' 个红灯预警需要关注';copy='优先处理临近效期且库存压力较高的品种，减少后续集中处理成本。';action='<button class="btn btn-primary btn-sm" onclick="switchTab(\'warnings\')">查看预警</button>';tone='red'}
+  else if(m.paymentDue>0){title='有 '+m.paymentDue+' 家医院回款临近';copy='建议今天先核对联系人、付款流程和预计回款日，减少遗漏。';action='<button class="btn btn-primary btn-sm" onclick="switchTab(\'payment\')">查看回款</button>';tone='yellow'}
+  else if(m.yellow>0){title='有 '+m.yellow+' 个黄灯品种可提前安排';copy='现在处理还不急，但提前推动动销会让后面轻松很多。';action='<button class="btn btn-sm" onclick="switchTab(\'warnings\')">查看黄灯</button>';tone='yellow'}
+  var access=accessInfo&&accessInfo.message?accessInfo.message:(isAdminRole()?'管理员模式':'正常使用中');
+  el.innerHTML='<div class="workspace-card primary"><div class="workspace-kicker">'+greet+(name?' · '+esc(name):'')+'</div><div class="workspace-title">'+esc(title)+'</div><div class="workspace-copy">'+esc(copy)+'</div><div class="workspace-link">'+action+'</div></div><div class="workspace-card"><div class="workspace-kicker">7天内到期</div><div class="workspace-metric '+(m.d7?'red':'green')+'">'+m.d7+'</div><div class="workspace-copy">'+(m.d7?'需要提前确认出库节奏':'暂无近效期压力')+'</div></div><div class="workspace-card"><div class="workspace-kicker">待回款到期</div><div class="workspace-metric '+(m.paymentDue?'yellow':'green')+'">'+m.paymentDue+'</div><div class="workspace-copy">待回款 '+(m.paymentTotal/10000).toFixed(1)+' 万</div></div><div class="workspace-card"><div class="workspace-kicker">当前状态</div><div class="workspace-metric '+tone+'">'+(tone==='green'?'良好':tone==='yellow'?'关注':'紧急')+'</div><div class="workspace-copy">'+esc(access)+'</div></div>';
+}
 function renderStats(){
   var rC=products.filter(function(p){return warnLevel(p)==='red'}).length,yC=products.filter(function(p){return warnLevel(p)==='yellow'}).length;
     var d3=products.filter(function(p){var d=daysUntil(p.expiry_date||p.expiryDate);return d>=0&&d<=3}).length;var d7=products.filter(function(p){var d=daysUntil(p.expiry_date||p.expiryDate);return d>=0&&d<=7}).length;
   var tS=products.reduce(function(s,p){return s+(p.stock||0)},0),tL=products.reduce(function(s,p){return s+(p.last_month_sales||p.lastMonthSales||0)},0);
   var pD=payments.filter(function(p){return payStatus(p)==='due'}).length,pT=payments.filter(function(p){return!p.paid}).reduce(function(s,p){return s+(p.amount||0)},0);
+  renderWorkspaceSummary({red:rC,yellow:yC,d3:d3,d7:d7,totalStock:tS,totalSales:tL,paymentDue:pD,paymentTotal:pT});
   document.getElementById('stats-bar').innerHTML='<div class="stat-card"><div class="stat-label">品种总数</div><div class="stat-value">'+products.length+'</div></div><div class="stat-card"><div class="stat-label">总库存</div><div class="stat-value">'+tS.toLocaleString()+'</div><div class="stat-sub">月销 '+tL.toLocaleString()+'</div></div><div class="stat-card red"><div class="stat-label">🔔 3天内到期</div><div class="stat-value">'+d3+'</div></div><div class="stat-card red"><div class="stat-label">红灯预警</div><div class="stat-value">'+rC+'</div></div><div class="stat-card yellow"><div class="stat-label">黄灯预警</div><div class="stat-value">'+yC+'</div></div>'+(payments.length>0?'<div class="stat-card green"><div class="stat-label">待回款</div><div class="stat-value">'+(pT/10000).toFixed(1)+'万</div><div class="stat-sub">'+pD+'家到期</div></div>':'');
   var wb=document.getElementById('nav-warn-badge'),wt=rC+yC;if(wt>0){wb.textContent=wt;wb.classList.remove('hidden')}else{wb.classList.add('hidden')}
   var pb=document.getElementById('nav-pay-badge');if(pD>0){pb.textContent=pD;pb.classList.remove('hidden')}else{pb.classList.add('hidden')}
@@ -890,7 +981,7 @@ async function seedDemoData(){if(!ensureWriteAccess())return;if(!supabaseClient|
 function fmtDate(ds){if(!ds)return'-';var d=new Date(ds);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function refresh(){renderStats();if(activeTab==='ledger')renderLedger();if(activeTab==='warnings')renderWarnings();if(activeTab==='report')renderReport();if(activeTab==='payment')renderPayments();if(activeTab==='notifications')renderNotifications();if(activeTab==='logs')renderLogs()}
-function toast(msg){var e=document.querySelector('.toast');if(e)e.remove();var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},2000)}
+function toast(msg,type){var e=document.querySelector('.toast');if(e)e.remove();var t=document.createElement('div'),m=String(msg||'');if(!type){if(/失败|错误|不能|过期|暂停|无权|请先|未配置/.test(m))type='error';else if(/提醒|到期|注意|只读/.test(m))type='warn';else if(/成功|完成|已|通过|保存|绑定|提交/.test(m))type='success';else type=''}t.className='toast '+type;t.innerHTML='<span class="toast-dot"></span><span>'+esc(m)+'</span><span class="toast-bar"></span>';document.body.appendChild(t);setTimeout(function(){if(t&&t.parentNode)t.remove()},2500)}
 document.querySelectorAll('.nav-item').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab)})});
 document.getElementById('product-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeProductModal()});
 document.getElementById('payment-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closePaymentModal()});

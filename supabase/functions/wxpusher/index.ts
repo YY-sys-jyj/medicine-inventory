@@ -291,6 +291,14 @@ function notificationPriority(n: any) {
   return { severityRank, daysRank };
 }
 
+function paymentContactText(p: any) {
+  const parts = [`联系人 ${p.contact || "-"}`];
+  if (p.role) parts.push(`职务 ${p.role}`);
+  if (p.phone) parts.push(`电话 ${p.phone}`);
+  if (p.notes) parts.push(`备注 ${p.notes}`);
+  return parts.join(" / ");
+}
+
 async function sendOneNotification(admin: any, appToken: string, pushplusToken: string, notification: any, binding: any) {
   let channelSent = 0;
   let channelFailed = 0;
@@ -360,7 +368,7 @@ async function buildDailyNotifications(admin: any) {
   const { data: roles } = await admin.from("user_roles").select("user_id,role,trial_ends_at,paid_until");
   const activeUsers = new Set((roles || []).filter(activeOrGrace).map((r: any) => r.user_id));
   const { data: products } = await admin.from("products").select("id,user_id,name,batch,expiry_date,stock,last_month_sales");
-  const { data: payments } = await admin.from("payments").select("id,user_id,hospital,next_date,amount,contact,paid");
+  const { data: payments } = await admin.from("payments").select("id,user_id,hospital,next_date,amount,contact,role,phone,notes,paid");
   const rows: any[] = [];
   for (const p of products || []) {
     if (!activeUsers.has(p.user_id)) continue;
@@ -396,7 +404,7 @@ async function buildDailyNotifications(admin: any) {
       type: "payment_due",
       severity: d <= 0 ? "red" : "yellow",
       title: `${d <= 0 ? "医院回款已到期" : "医院回款提醒"}：${p.hospital || ""}`,
-      content: `回款日 ${fmtDate(p.next_date)} / 金额 ${Number(p.amount || 0).toLocaleString()} / 联系人 ${p.contact || "-"} / 剩余 ${d} 天`,
+      content: `回款日 ${fmtDate(p.next_date)} / 金额 ${Number(p.amount || 0).toLocaleString()} / ${paymentContactText(p)} / 剩余 ${d} 天`,
       source_type: "payment",
       source_key: p.id,
       dedupe_key: `payment:due:${p.id}:${nowKey}:${slot}`,
@@ -548,6 +556,21 @@ Deno.serve(async (req) => {
         .not("read_at", "is", null);
       if (error) return json({ error: `清空失败：${error.message}` }, 500);
       return json({ ok: true, deleted: count || 0 });
+    }
+
+    if (action === "clear-logs") {
+      const tables = ["inventory_logs", "payment_logs", "delete_logs"];
+      let deleted = 0;
+      const errors: any[] = [];
+      for (const table of tables) {
+        const { count, error } = await admin.from(table)
+          .delete({ count: "exact" })
+          .eq("user_id", user.id);
+        if (error) errors.push({ table, error: error.message });
+        else deleted += count || 0;
+      }
+      if (errors.length) return json({ error: `部分日志清空失败：${errors.map((e) => `${e.table}: ${e.error}`).join("；")}`, deleted }, 500);
+      return json({ ok: true, deleted });
     }
 
     if (action === "broadcast-announcement") {

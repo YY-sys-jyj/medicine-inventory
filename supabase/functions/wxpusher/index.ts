@@ -294,9 +294,21 @@ function notificationPriority(n: any) {
 function paymentContactText(p: any) {
   const parts = [`联系人 ${p.contact || "-"}`];
   if (p.role) parts.push(`职务 ${p.role}`);
-  if (p.phone) parts.push(`电话 ${p.phone}`);
+  if (p.phone) parts.push(paymentPhoneText(p.phone));
   if (p.notes) parts.push(`备注 ${p.notes}`);
   return parts.join(" / ");
+}
+
+function dialPhoneValue(phone: any) {
+  return String(phone || "").trim().replace(/[^\d+]/g, "");
+}
+
+function paymentPhoneText(phone: any) {
+  const raw = String(phone || "").trim();
+  const dial = dialPhoneValue(raw);
+  if (!raw) return "电话 -";
+  if (raw.includes("*")) return `电话 ${raw}（号码已打码，请在医院资料里补全）`;
+  return dial && dial !== raw ? `电话 ${raw} / 拨号 tel:${dial}` : `电话 ${raw}${dial ? ` / 拨号 tel:${dial}` : ""}`;
 }
 
 async function sendOneNotification(admin: any, appToken: string, pushplusToken: string, notification: any, binding: any) {
@@ -410,7 +422,7 @@ async function buildDailyNotifications(admin: any) {
       dedupe_key: `payment:due:${p.id}:${nowKey}:${slot}`,
     });
   }
-  if (rows.length) await admin.from("notification_events").upsert(rows, { onConflict: "user_id,dedupe_key", ignoreDuplicates: true });
+  if (rows.length) await admin.from("notification_events").upsert(rows, { onConflict: "user_id,dedupe_key" });
   return { created: rows.length, userIds: [...activeUsers], dateKey: nowKey, slot };
 }
 

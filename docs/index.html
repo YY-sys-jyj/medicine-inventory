@@ -178,6 +178,29 @@ th,.login-card h1,.sidebar-brand h1{letter-spacing:0}
 .login-preview-meta{color:#94a3b8;white-space:nowrap}
 .login-chip{display:inline-flex;justify-content:center;border-radius:999px;padding:3px 8px;font-weight:700;font-size:11px}
 .login-chip.red{background:rgba(220,38,38,.16);color:#fecaca}.login-chip.yellow{background:rgba(217,119,6,.18);color:#fde68a}.login-chip.green{background:rgba(22,163,74,.18);color:#bbf7d0}
+.login-feature-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+.login-feature-tab{border:1px solid #dbe5ef;background:#fff;border-radius:999px;padding:7px 11px;color:#607086;font-size:12px;font-weight:700;cursor:pointer;transition:background .16s,border-color .16s,color .16s,transform .16s}
+.login-feature-tab:hover{transform:translateY(-1px);border-color:#b9c8dd;color:#172033}
+.login-feature-tab.active{background:#172033;color:#fff;border-color:#172033}
+.login-showcase{margin-top:auto;background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:15px;color:#e5e7eb;box-shadow:0 18px 46px rgba(15,23,42,.22)}
+.login-showcase-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.login-showcase-title{font-size:13px;font-weight:800;color:#f8fafc}
+.login-showcase-step{font-size:11px;color:#93c5fd}
+.login-demo-card{background:#182235;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px}
+.login-demo-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.login-demo-name{font-size:13px;font-weight:800;color:#fff}
+.login-demo-tag{border-radius:999px;background:rgba(37,99,235,.2);color:#bfdbfe;padding:3px 8px;font-size:11px;font-weight:800}
+.login-demo-copy{font-size:12px;color:#cbd5e1;line-height:1.65;margin-bottom:10px}
+.login-demo-screen{display:grid;gap:7px}
+.login-demo-row{display:grid;grid-template-columns:76px 1fr 64px;gap:8px;align-items:center;padding:8px 10px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.05);font-size:12px;color:#e2e8f0}
+.login-demo-row b{color:#fff}
+.login-demo-pill{display:inline-flex;justify-content:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800}
+.login-demo-pill.red{background:rgba(220,38,38,.2);color:#fecaca}.login-demo-pill.yellow{background:rgba(217,119,6,.2);color:#fde68a}.login-demo-pill.green{background:rgba(22,163,74,.2);color:#bbf7d0}.login-demo-pill.blue{background:rgba(37,99,235,.2);color:#bfdbfe}
+.login-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 18px}
+.login-mode-btn{border:1px solid #d8e1ec;background:#fff;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:800;color:#607086;cursor:pointer;font-family:inherit}
+.login-mode-btn.active{background:#172033;color:#fff;border-color:#172033}
+.login-otp-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.login-otp-note{font-size:11px;color:var(--text3);line-height:1.6;margin-top:6px}
 .login-card{align-self:center;width:100%;max-width:none;padding:42px 34px;background:rgba(255,255,255,.94)}
 .login-card-wrap{display:flex;align-items:center}
 .login-meta-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
@@ -280,12 +303,22 @@ button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible
           <div class="login-status-card"><div class="login-status-label">待回款</div><div class="login-status-value yellow">8.6万</div></div>
           <div class="login-status-card"><div class="login-status-label">推送通道</div><div class="login-status-value green">ON</div></div>
         </div>
-        <div class="login-preview">
-          <div class="login-preview-head"><span>今日提醒</span><div class="login-preview-tabs"><span class="login-preview-tab active">效期</span><span class="login-preview-tab">回款</span></div></div>
-          <div class="login-preview-list">
-            <div class="login-preview-row"><span class="login-chip red">红灯</span><strong>氯雷他定片 10mgx12片</strong><span class="login-preview-meta">剩 19 天</span></div>
-            <div class="login-preview-row"><span class="login-chip yellow">回款</span><strong>遂宁市中医院</strong><span class="login-preview-meta">7 天内</span></div>
-            <div class="login-preview-row"><span class="login-chip green">同步</span><strong>微信提醒已就绪</strong><span class="login-preview-meta">07:50</span></div>
+        <div class="login-feature-tabs">
+          <button class="login-feature-tab active" type="button" data-login-demo="0" onclick="setLoginDemoSlide(0,true)">库存台账</button>
+          <button class="login-feature-tab" type="button" data-login-demo="1" onclick="setLoginDemoSlide(1,true)">预警看板</button>
+          <button class="login-feature-tab" type="button" data-login-demo="2" onclick="setLoginDemoSlide(2,true)">回款管理</button>
+          <button class="login-feature-tab" type="button" data-login-demo="3" onclick="setLoginDemoSlide(3,true)">微信提醒</button>
+        </div>
+        <div class="login-showcase">
+          <div class="login-showcase-head"><span class="login-showcase-title">功能演示</span><span class="login-showcase-step" id="login-demo-step">1 / 4</span></div>
+          <div class="login-demo-card" id="login-demo-stage">
+            <div class="login-demo-top"><span class="login-demo-name">库存台账</span><span class="login-demo-tag">快速上手</span></div>
+            <p class="login-demo-copy">按品种、批号和效期管理库存，入库出库会自动沉淀日志。</p>
+            <div class="login-demo-screen">
+              <div class="login-demo-row"><span class="login-demo-pill green">入库</span><b>氯雷他定片</b><span>+120</span></div>
+              <div class="login-demo-row"><span class="login-demo-pill red">出库</span><b>阿莫西林胶囊</b><span>-36</span></div>
+              <div class="login-demo-row"><span class="login-demo-pill blue">导入</span><b>Excel 批量品种</b><span>22条</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -293,8 +326,10 @@ button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible
     <div class="login-card-wrap">
       <div class="login-card">
         <h1>医药库存动销管理</h1><p class="login-sub">效期预警 & 回款管理系统</p>
+        <div class="login-mode-switch"><button class="login-mode-btn active" id="login-mode-password" type="button" onclick="setLoginMode('password')">密码登录</button><button class="login-mode-btn" id="login-mode-otp" type="button" onclick="setLoginMode('otp')">验证码登录</button></div>
         <div class="form-group"><label class="form-label">手机号或邮箱登录</label><input class="form-input" type="text" id="login-phone" placeholder="手机号或邮箱" autocomplete="username"></div>
-        <div class="form-group"><label class="form-label">密码</label><input class="form-input" type="password" id="login-password" placeholder="设置/输入密码（至少8位，含字母+数字）" minlength="8" autocomplete="new-password" oninput="updatePasswordStrength()"><div class="pw-strength" id="pw-strength-bar"><div class="pw-strength-track"><div class="pw-strength-fill" id="pw-strength-fill"></div></div><span class="pw-strength-text" id="pw-strength-text"></span></div></div>
+        <div class="form-group" id="login-password-group"><label class="form-label">密码</label><input class="form-input" type="password" id="login-password" placeholder="设置/输入密码（至少8位，含字母+数字）" minlength="8" autocomplete="new-password" oninput="updatePasswordStrength()"><div class="pw-strength" id="pw-strength-bar"><div class="pw-strength-track"><div class="pw-strength-fill" id="pw-strength-fill"></div></div><span class="pw-strength-text" id="pw-strength-text"></span></div></div>
+        <div class="form-group" id="login-otp-group" style="display:none"><label class="form-label">短信验证码</label><div class="login-otp-row"><input class="form-input" id="login-otp-code" placeholder="6位验证码" inputmode="numeric" autocomplete="one-time-code"><button class="btn btn-sm" type="button" onclick="sendLoginOtp()">发送验证码</button></div><div class="login-otp-note">验证码登录需要 Supabase 后台已配置短信服务；已有密码账号建议继续使用密码登录。</div></div>
         <button class="login-btn" id="login-btn" onclick="handleLogin()" disabled>连接服务器...</button>
         <div class="login-error" id="login-error"></div>
         <p style="text-align:center;margin-top:8px"><a href="javascript:openForgotModal()" style="color:var(--accent);font-size:12px;text-decoration:none">忘记密码？</a></p>
@@ -338,7 +373,7 @@ button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible
 <div class="modal-overlay hidden" id="pay-modal-overlay"><div class="modal"><div class="modal-head"><h3>续费订阅 ¥2/月</h3><button class="modal-close" onclick="closePayModal()">✕</button></div><div class="modal-body"><p style="font-size:13px;color:var(--text2);margin-bottom:12px">请扫描下方收款码支付 <b style="color:var(--accent)">¥2.00</b>，并在转账备注中填写您的手机号</p><div id="pay-qr" style="text-align:center;margin-bottom:12px"></div><div class="form-group"><label class="form-label">转账单号 / 交易流水号</label><input class="form-input" id="pay-ref" placeholder="输入微信/支付宝交易单号后4位或备注信息"></div><div id="pay-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closePayModal()">取消</button><button class="btn btn-primary" onclick="submitPayment()">确认已付款</button></div></div></div><div class="modal-overlay hidden" id="stock-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="stock-modal-title">出入库</h3><button class="modal-close" onclick="closeStockModal();closeStmtModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">品种</label><input class="form-input" id="fs-name" disabled></div><div class="form-row"><div class="form-group"><label class="form-label">数量</label><input class="form-input" type="number" id="fs-qty" min="1" value="1"></div><div class="form-group"><label class="form-label">当前库存</label><input class="form-input" id="fs-current" disabled></div></div><div class="form-group"><label class="form-label">备注</label><input class="form-input" id="fs-note" placeholder="入库来源/出库原因"></div><input type="hidden" id="fs-id"><input type="hidden" id="fs-type"></div><div class="modal-foot"><button class="btn" onclick="closeStockModal();closeStmtModal()">取消</button><button class="btn btn-primary" onclick="saveStock()">确认</button></div></div></div>
 
 <div class="modal-overlay hidden" id="stmt-modal-overlay"><div class="modal" style="width:600px;max-width:95vw"><div class="modal-head"><h3>📋 医院对账单</h3><button class="modal-close" onclick="closeStmtModal()">✕</button></div><div class="modal-body" id="stmt-content" style="font-size:13px"></div><div class="modal-foot"><button class="btn" onclick="closeStmtModal()">关闭</button><button class="btn btn-primary" onclick="window.print()">🖨 打印</button></div></div></div>
-<div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">请输入绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" onclick="handleForgotPassword()">发送重置链接</button></div></div></div>
+<div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="readonly-note">邮箱账号会发送重置邮件；手机号账号请先发送短信验证码，再输入新密码完成重置。短信验证码需要 Supabase 后台已配置短信服务。</div><div class="form-group"><label class="form-label">绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div class="form-group"><label class="form-label">短信验证码（手机号重置时填写）</label><div class="login-otp-row"><input class="form-input" id="ff-code" placeholder="6位验证码" inputmode="numeric" autocomplete="one-time-code"><button class="btn btn-sm" type="button" onclick="sendForgotOtp()">发送验证码</button></div></div><div class="form-group"><label class="form-label">新密码（手机号重置时填写）</label><input class="form-input" id="ff-new-password" type="password" placeholder="至少8位，含字母+数字"></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" onclick="handleForgotPassword()">继续</button></div></div></div>
 <script src="supabase.js"></script>
 <script src="xlsx.full.min.js"></script>
 
@@ -349,7 +384,7 @@ var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>
 var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
-var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger',notificationExpanded=false,logExpanded=false,lastDataRefresh=null;
+var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger',notificationExpanded=false,logExpanded=false,lastDataRefresh=null,loginMode='password',loginDemoIndex=0,loginDemoTimer=null;
 var GRACE_DAYS=3,accessInfo={state:'active',canRead:true,canWrite:true};
 function phoneToEmail(p){if(p.indexOf('@')>=0)return p.trim();return'user_'+p.replace(/\D/g,'')+'@rx.user'}
 function isEmailAddress(v){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
@@ -358,7 +393,8 @@ function normalizeLoginId(v){return v.trim().replace(/^\+?86/,'')}
 function showLoading(m){document.getElementById('loading-text').textContent=m||'...';document.getElementById('loading-overlay').classList.remove('hidden')}
 function hideLoading(){document.getElementById('loading-overlay').classList.add('hidden')}
 function withTimeout(promise,ms,message){return Promise.race([promise,new Promise(function(resolve){setTimeout(function(){resolve({data:null,error:{message:message||'请求超时'}})},ms)})])}
-function setLoginReady(ready,message){var btn=document.getElementById('login-btn');if(!btn)return;btn.disabled=!ready;btn.innerHTML=ready?'登 录':(message||'连接服务器...')}
+function loginSubmitText(){return loginMode==='otp'?'验证码登录':'登 录'}
+function setLoginReady(ready,message){var btn=document.getElementById('login-btn');if(!btn)return;btn.disabled=!ready;btn.innerHTML=ready?loginSubmitText():(message||'连接服务器...')}
 function waitForSupabaseClient(ms){
   if(supabaseClient)return Promise.resolve(true);
   return new Promise(function(resolve){
@@ -540,10 +576,49 @@ function authErrorText(error, action){
   if((error&&error.status===0)||low.indexOf('failed to fetch')>=0||low.indexOf('network')>=0){
     return action+'失败：无法连接服务器。请检查网络/DNS，或确认 Supabase 地址可访问：'+SUPABASE_URL;
   }
+  if(low.indexOf('sms')>=0||low.indexOf('phone')>=0||low.indexOf('provider')>=0){
+    return action+'失败：短信验证码通道未配置或不可用，请在 Supabase Auth 里配置短信服务后再使用。';
+  }
   return action+'失败：'+(msg||'请稍后重试');
+}
+function otpPhoneValue(v){var p=normalizeLoginId(v).replace(/\D/g,'');return p?'+86'+p:''}
+function setLoginMode(mode){
+  loginMode=mode==='otp'?'otp':'password';
+  var p=document.getElementById('login-password-group'),o=document.getElementById('login-otp-group'),bp=document.getElementById('login-mode-password'),bo=document.getElementById('login-mode-otp'),err=document.getElementById('login-error');
+  if(p)p.style.display=loginMode==='password'?'block':'none';
+  if(o)o.style.display=loginMode==='otp'?'block':'none';
+  if(bp)bp.classList.toggle('active',loginMode==='password');
+  if(bo)bo.classList.toggle('active',loginMode==='otp');
+  if(err)err.textContent='';
+  setLoginReady(!!supabaseClient);
+}
+async function sendLoginOtp(){
+  var login=normalizeLoginId(document.getElementById('login-phone').value),err=document.getElementById('login-error');err.textContent='';
+  if(!login)return err.textContent='请先输入手机号';
+  if(login.indexOf('@')>=0){err.textContent='短信验证码登录目前仅支持手机号；邮箱账号请使用密码登录或找回密码。';return}
+  if(!isValidMainlandPhone(login)){err.textContent='请输入正规中国大陆手机号';return}
+  if(!supabaseClient){err.textContent='服务器还未连接，请稍后再试';return}
+  var r=await withTimeout(supabaseClient.auth.signInWithOtp({phone:otpPhoneValue(login)}),15000,'验证码发送超时，请检查网络后重试');
+  if(r.error){err.textContent=authErrorText(r.error,'发送验证码');return}
+  err.style.color='var(--green)';err.textContent='验证码已发送，请查看短信';setTimeout(function(){err.style.color=''},2600)
+}
+async function handleOtpLogin(){
+  var login=normalizeLoginId(document.getElementById('login-phone').value),code=(document.getElementById('login-otp-code').value||'').trim(),err=document.getElementById('login-error'),btn=document.getElementById('login-btn');err.textContent='';
+  if(login.indexOf('@')>=0){err.textContent='验证码登录目前仅支持手机号；邮箱账号请使用密码登录。';return}
+  if(!isValidMainlandPhone(login)){err.textContent='请输入正规中国大陆手机号';return}
+  if(!/^\d{4,8}$/.test(code)){err.textContent='请输入短信验证码';return}
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>验证中...';
+  var r=await withTimeout(supabaseClient.auth.verifyOtp({phone:otpPhoneValue(login),token:code,type:'sms'}),15000,'验证码验证超时，请检查网络后重试');
+  if(r.error){err.textContent=authErrorText(r.error,'验证码登录');btn.disabled=false;btn.innerHTML=loginSubmitText();return}
+  currentUser=(r.data.session||r.data).user;
+  try{var up=await supabaseClient.auth.updateUser({data:{phone:login}});if(up&&up.data&&up.data.user)currentUser=up.data.user}catch(e){}
+  var legacy=await callWxPusherFunction('phone-login-status',{phone:login});
+  if(legacy&&legacy.data&&legacy.data.legacyPasswordAccount){await supabaseClient.auth.signOut();currentUser=null;err.textContent='该手机号已有密码账号。请使用密码登录；如果忘记密码，请点“忘记密码”用短信验证码重置。';btn.disabled=false;btn.innerHTML=loginSubmitText();return}
+  await checkUserRole();if(userRole===null){err.textContent='登录会话已过期或角色读取失败，请重新登录';btn.disabled=false;btn.innerHTML=loginSubmitText();return}enterApp(login);
 }
 
 async function handleLogin(){
+  if(loginMode==='otp')return handleOtpLogin();
   var phone=normalizeLoginId(document.getElementById('login-phone').value),pw=document.getElementById('login-password').value;
   var err=document.getElementById('login-error'),btn=document.getElementById('login-btn');err.textContent='';
   var isEmail=phone.indexOf('@')>=0;
@@ -1082,6 +1157,23 @@ function fmtDate(ds){if(!ds)return'-';var d=new Date(ds);return d.getFullYear()+
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function refresh(){renderStats();if(activeTab==='ledger')renderLedger();if(activeTab==='warnings')renderWarnings();if(activeTab==='report')renderReport();if(activeTab==='payment')renderPayments();if(activeTab==='notifications')renderNotifications();if(activeTab==='logs')renderLogs()}
 function toast(msg,type){var e=document.querySelector('.toast');if(e)e.remove();var t=document.createElement('div'),m=String(msg||'');if(!type){if(/失败|错误|不能|过期|暂停|无权|请先|未配置/.test(m))type='error';else if(/提醒|到期|注意|只读/.test(m))type='warn';else if(/成功|完成|已|通过|保存|绑定|提交/.test(m))type='success';else type=''}t.className='toast '+type;t.innerHTML='<span class="toast-dot"></span><span>'+esc(m)+'</span><span class="toast-bar"></span>';document.body.appendChild(t);setTimeout(function(){if(t&&t.parentNode)t.remove()},2500)}
+var loginDemoSlides=[
+  {name:'库存台账',tag:'快速上手',copy:'按品种、批号和效期管理库存，入库出库会自动沉淀日志。',rows:[['green','入库','氯雷他定片','+120'],['red','出库','阿莫西林胶囊','-36'],['blue','导入','Excel 批量品种','22条']]},
+  {name:'预警看板',tag:'红灯优先',copy:'临近效期自动分红灯和黄灯，先处理最紧急的品种。',rows:[['red','红灯','银杏叶片 40mgx24片','29天'],['red','红灯','蒙脱石散 3gx10袋','31天'],['yellow','黄灯','布洛芬缓释胶囊','118天']]},
+  {name:'回款管理',tag:'到期跟进',copy:'医院回款按到期时间排序，负责人和电话会一起提醒。',rows:[['red','到期','遂宁市中医院','96,000'],['yellow','7天内','船山区人民医院','210,000'],['green','已回款','安居区人民医院','归档']]},
+  {name:'微信提醒',tag:'自动推送',copy:'客户绑定接收账号后，不用打开网页也能收到早晚提醒。',rows:[['blue','7:50','药品红灯提醒','已推送'],['yellow','16:50','医院回款提醒','待推送'],['green','绑定','WxPusher / PushPlus','在线']]}
+];
+function setLoginDemoSlide(index,manual){
+  var stage=document.getElementById('login-demo-stage');if(!stage)return;
+  loginDemoIndex=(index+loginDemoSlides.length)%loginDemoSlides.length;
+  var s=loginDemoSlides[loginDemoIndex];
+  var rows=s.rows.map(function(r){return'<div class="login-demo-row"><span class="login-demo-pill '+r[0]+'">'+esc(r[1])+'</span><b>'+esc(r[2])+'</b><span>'+esc(r[3])+'</span></div>'}).join('');
+  stage.innerHTML='<div class="login-demo-top"><span class="login-demo-name">'+esc(s.name)+'</span><span class="login-demo-tag">'+esc(s.tag)+'</span></div><p class="login-demo-copy">'+esc(s.copy)+'</p><div class="login-demo-screen">'+rows+'</div>';
+  var step=document.getElementById('login-demo-step');if(step)step.textContent=(loginDemoIndex+1)+' / '+loginDemoSlides.length;
+  document.querySelectorAll('.login-feature-tab').forEach(function(b){b.classList.toggle('active',Number(b.dataset.loginDemo)===loginDemoIndex)});
+  if(manual&&loginDemoTimer){clearInterval(loginDemoTimer);loginDemoTimer=setInterval(function(){setLoginDemoSlide(loginDemoIndex+1,false)},4200)}
+}
+function startLoginDemoCarousel(){setLoginDemoSlide(0,false);if(loginDemoTimer)clearInterval(loginDemoTimer);loginDemoTimer=setInterval(function(){setLoginDemoSlide(loginDemoIndex+1,false)},4200)}
 document.querySelectorAll('.nav-item').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab)})});
 document.getElementById('product-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeProductModal()});
 document.getElementById('payment-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closePaymentModal()});
@@ -1092,19 +1184,48 @@ document.getElementById('stmt-modal-overlay').addEventListener('click',function(
 document.getElementById('stock-modal-overlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeStockModal();closeStmtModal()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal();closeForgotModal();closePayModal();closeStockModal();closeStmtModal();closeQuickStock()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
+document.getElementById('login-otp-code').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
+document.getElementById('ff-new-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleForgotPassword()});
+startLoginDemoCarousel();
 initApp();
-function openForgotModal(){document.getElementById('forgot-modal-overlay').classList.remove('hidden');document.getElementById('ff-phone').value='';document.getElementById('forgot-msg').textContent=''}
+function openForgotModal(){document.getElementById('forgot-modal-overlay').classList.remove('hidden');document.getElementById('ff-phone').value='';document.getElementById('ff-code').value='';document.getElementById('ff-new-password').value='';document.getElementById('forgot-msg').textContent=''}
 function closeForgotModal(){document.getElementById('forgot-modal-overlay').classList.add('hidden')}
+async function sendForgotOtp(){
+  var phone=normalizeLoginId(document.getElementById('ff-phone').value),msg=document.getElementById('forgot-msg');msg.textContent='';
+  if(!phone)return msg.textContent='请输入手机号';
+  if(phone.indexOf('@')>=0){msg.innerHTML='<span style="color:var(--text2)">邮箱账号不需要短信验证码，点击“继续”发送重置邮件。</span>';return}
+  if(!isValidMainlandPhone(phone)){msg.innerHTML='<span style="color:var(--red)">请输入正规中国大陆手机号</span>';return}
+  var r=await withTimeout(supabaseClient.auth.signInWithOtp({phone:otpPhoneValue(phone)}),15000,'验证码发送超时，请检查网络后重试');
+  if(r.error){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(r.error,'发送验证码')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
+  msg.innerHTML='<span style="color:var(--green)">验证码已发送，请查看短信。收到后输入验证码和新密码，再点继续。</span>';
+}
 async function handleForgotPassword(){
-  var phone=document.getElementById('ff-phone').value.trim();
-  if(!phone){document.getElementById('forgot-msg').textContent='请输入手机号或邮箱';return}
-  var email=phone.indexOf('@')>=0?phone:'user_'+phone.replace(/\D/g,'')+'@rx.user';
-  document.getElementById('forgot-msg').textContent='正在发送重置链接...';
+  var login=normalizeLoginId(document.getElementById('ff-phone').value),msg=document.getElementById('forgot-msg'),code=(document.getElementById('ff-code').value||'').trim(),newPw=document.getElementById('ff-new-password').value||'';
+  if(!login){msg.textContent='请输入手机号或邮箱';return}
+  if(login.indexOf('@')>=0){
+    if(!isEmailAddress(login)){msg.innerHTML='<span style="color:var(--red)">邮箱格式不正确</span>';return}
+    msg.textContent='正在发送重置邮件...';
+    try{
+      var er=await supabaseClient.auth.resetPasswordForEmail(login,{redirectTo:location.href.split('#')[0]});
+      if(er.error){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(er.error,'发送')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
+      msg.innerHTML='<span style="color:var(--green)">如果该邮箱账号存在，重置邮件已发送。请打开邮箱里的链接设置新密码。</span>';
+    }catch(ee){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(ee,'发送')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>'}
+    return;
+  }
+  if(!isValidMainlandPhone(login)){msg.innerHTML='<span style="color:var(--red)">请输入正规中国大陆手机号</span>';return}
+  if(!code){await sendForgotOtp();return}
+  var strength=getPasswordStrength(newPw);
+  if(!strength.valid){msg.innerHTML='<span style="color:var(--red)">新密码至少8位，并包含字母和数字</span>';return}
+  msg.textContent='正在验证短信并重置密码...';
   try{
-    var r=await supabaseClient.auth.resetPasswordForEmail({email:email});
-    if(r.error){document.getElementById('forgot-msg').innerHTML='<span style="color:var(--red)">'+authErrorText(r.error,'发送')+'<br>超级管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
-    document.getElementById('forgot-msg').innerHTML='<span style="color:var(--green)">如果该账号存在，重置邮件已发送<br>如未收到邮件，请联系管理员：'+SUPER_ADMIN_PHONE+'</span>';
-  }catch(e){document.getElementById('forgot-msg').innerHTML='<span style="color:var(--red)">'+authErrorText(e,'发送')+'<br>超级管理员：'+SUPER_ADMIN_PHONE+'</span>'}
+    var vr=await withTimeout(supabaseClient.auth.verifyOtp({phone:otpPhoneValue(login),token:code,type:'sms'}),15000,'验证码验证超时，请检查网络后重试');
+    if(vr.error){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(vr.error,'验证')+'</span>';return}
+    var rr=await callWxPusherFunction('reset-password-by-phone-proof',{phone:login,new_password:newPw});
+    await supabaseClient.auth.signOut();
+    currentUser=null;
+    if(rr.error){msg.innerHTML='<span style="color:var(--red)">重置失败：'+esc(rr.error)+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
+    msg.innerHTML='<span style="color:var(--green)">密码已重置，请关闭窗口后用手机号和新密码登录。</span>';
+  }catch(e){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(e,'重置')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>'}
 }
 // Add forgot modal to escape and click-outside handlers
 

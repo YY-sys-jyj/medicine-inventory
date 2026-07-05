@@ -268,6 +268,27 @@ async function userRole(admin: any, userId: string) {
   return data;
 }
 
+function normalizeCnPhone(value: any) {
+  return String(value || "").trim().replace(/^\+?86/, "").replace(/\D/g, "");
+}
+
+function userOwnsVerifiedPhone(user: any, phone: string) {
+  const normalized = normalizeCnPhone(phone);
+  if (!normalized) return false;
+  return normalizeCnPhone(user?.phone) === normalized || normalizeCnPhone(user?.user_metadata?.phone) === normalized;
+}
+
+async function rolesByPhone(admin: any, phone: string) {
+  const normalized = normalizeCnPhone(phone);
+  if (!normalized) return [];
+  const { data } = await admin
+    .from("user_roles")
+    .select("user_id,role,phone")
+    .eq("phone", normalized)
+    .limit(10);
+  return data || [];
+}
+
 async function bindingFor(admin: any, userId: string) {
   const { data } = await admin.from("wechat_bindings").select("*").eq("user_id", userId).maybeSingle();
   return data;
@@ -486,6 +507,31 @@ Deno.serve(async (req) => {
     }
 
     const user = await authedUser(req, admin);
+
+    if (action === "phone-login-status") {
+      const phone = normalizeCnPhone(body.phone);
+      if (!userOwnsVerifiedPhone(user, phone)) return json({ error: "手机号验证码身份不匹配，请重新获取验证码" }, 403);
+      const matches = await rolesByPhone(admin, phone);
+      const existing = matches.find((r: any) => r.user_id !== user.id);
+      return json({
+        ok: true,
+        legacyPasswordAccount: !!existing,
+      });
+    }
+
+    if (action === "reset-password-by-phone-proof") {
+      const phone = normalizeCnPhone(body.phone);
+      const newPassword = String(body.new_password || body.newPassword || "");
+      if (!userOwnsVerifiedPhone(user, phone)) return json({ error: "手机号验证码身份不匹配，请重新获取验证码" }, 403);
+      if (newPassword.length < 8) return json({ error: "新密码至少 8 位" }, 400);
+      const matches = await rolesByPhone(admin, phone);
+      const existing = matches.find((r: any) => r.user_id !== user.id) || matches[0];
+      const targetUserId = existing?.user_id || user.id;
+      const { error } = await admin.auth.admin.updateUserById(targetUserId, { password: newPassword });
+      if (error) return json({ error: error.message || "密码重置失败" }, 500);
+      return json({ ok: true, resetUserId: targetUserId });
+    }
+
     const role = await userRole(admin, user.id);
     if (!activeOrGrace(role)) return json({ error: "服务已暂停，不能发送微信提醒" }, 403);
 

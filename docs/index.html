@@ -201,6 +201,11 @@ th,.login-card h1,.sidebar-brand h1{letter-spacing:0}
 .login-mode-btn.active{background:#fff;color:#1d4ed8;box-shadow:0 5px 14px rgba(15,23,42,.08)}
 .login-otp-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
 .login-otp-note{font-size:11px;color:var(--text3);line-height:1.6;margin-top:6px}
+.forgot-steps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.forgot-step-pill{border:1px solid #dbe5ef;border-radius:999px;padding:7px 10px;text-align:center;font-size:12px;font-weight:800;color:#718096;background:#fff}
+.forgot-step-pill.active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+.forgot-step-pill.done{background:#ecfdf3;border-color:#bbf7d0;color:#15803d}
+.forgot-verified{border:1px solid #dbeafe;background:#f8fbff;border-radius:10px;padding:10px 12px;font-size:12px;color:#475569;margin-bottom:12px}
 .login-card{align-self:center;width:100%;max-width:none;padding:42px 34px;background:rgba(255,255,255,.96);border-radius:14px}
 .login-card input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #fff inset!important;-webkit-text-fill-color:#111827!important}
 .login-card-wrap{display:flex;align-items:center}
@@ -374,7 +379,7 @@ button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible
 <div class="modal-overlay hidden" id="pay-modal-overlay"><div class="modal"><div class="modal-head"><h3>续费订阅 ¥2/月</h3><button class="modal-close" onclick="closePayModal()">✕</button></div><div class="modal-body"><p style="font-size:13px;color:var(--text2);margin-bottom:12px">请扫描下方收款码支付 <b style="color:var(--accent)">¥2.00</b>，并在转账备注中填写您的手机号</p><div id="pay-qr" style="text-align:center;margin-bottom:12px"></div><div class="form-group"><label class="form-label">转账单号 / 交易流水号</label><input class="form-input" id="pay-ref" placeholder="输入微信/支付宝交易单号后4位或备注信息"></div><div id="pay-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closePayModal()">取消</button><button class="btn btn-primary" onclick="submitPayment()">确认已付款</button></div></div></div><div class="modal-overlay hidden" id="stock-modal-overlay"><div class="modal"><div class="modal-head"><h3 id="stock-modal-title">出入库</h3><button class="modal-close" onclick="closeStockModal();closeStmtModal()">✕</button></div><div class="modal-body"><div class="form-group"><label class="form-label">品种</label><input class="form-input" id="fs-name" disabled></div><div class="form-row"><div class="form-group"><label class="form-label">数量</label><input class="form-input" type="number" id="fs-qty" min="1" value="1"></div><div class="form-group"><label class="form-label">当前库存</label><input class="form-input" id="fs-current" disabled></div></div><div class="form-group"><label class="form-label">备注</label><input class="form-input" id="fs-note" placeholder="入库来源/出库原因"></div><input type="hidden" id="fs-id"><input type="hidden" id="fs-type"></div><div class="modal-foot"><button class="btn" onclick="closeStockModal();closeStmtModal()">取消</button><button class="btn btn-primary" onclick="saveStock()">确认</button></div></div></div>
 
 <div class="modal-overlay hidden" id="stmt-modal-overlay"><div class="modal" style="width:600px;max-width:95vw"><div class="modal-head"><h3>📋 医院对账单</h3><button class="modal-close" onclick="closeStmtModal()">✕</button></div><div class="modal-body" id="stmt-content" style="font-size:13px"></div><div class="modal-foot"><button class="btn" onclick="closeStmtModal()">关闭</button><button class="btn btn-primary" onclick="window.print()">🖨 打印</button></div></div></div>
-<div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="readonly-note">邮箱账号会发送重置邮件；手机号账号请先发送短信验证码，再输入新密码完成重置。短信验证码需要 Supabase 后台已配置短信服务。</div><div class="form-group"><label class="form-label">绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div class="form-group"><label class="form-label">短信验证码（手机号重置时填写）</label><div class="login-otp-row"><input class="form-input" id="ff-code" placeholder="6位验证码" inputmode="numeric" autocomplete="one-time-code"><button class="btn btn-sm" type="button" onclick="sendForgotOtp()">发送验证码</button></div></div><div class="form-group"><label class="form-label">新密码（手机号重置时填写）</label><input class="form-input" id="ff-new-password" type="password" placeholder="至少8位，含字母+数字"></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" onclick="handleForgotPassword()">继续</button></div></div></div>
+<div class="modal-overlay hidden" id="forgot-modal-overlay"><div class="modal"><div class="modal-head"><h3>找回密码</h3><button class="modal-close" onclick="closeForgotModal()">✕</button></div><div class="modal-body"><div class="forgot-steps"><div class="forgot-step-pill active" id="forgot-step-verify">1. 验证身份</div><div class="forgot-step-pill" id="forgot-step-reset">2. 设置新密码</div></div><div class="readonly-note" id="forgot-note">先验证账号归属，再设置新密码。手机号需要短信验证码；邮箱账号会发送重置邮件，点邮件链接回来后再设置新密码。</div><div id="forgot-verify-box"><div class="form-group"><label class="form-label">绑定的手机号或邮箱</label><input class="form-input" id="ff-phone" placeholder="手机号或邮箱"></div><div class="form-group"><label class="form-label">短信验证码（手机号验证时填写）</label><div class="login-otp-row"><input class="form-input" id="ff-code" placeholder="6位验证码" inputmode="numeric" autocomplete="one-time-code"><button class="btn btn-sm" type="button" onclick="sendForgotOtp()">发送验证码</button></div><div class="login-otp-note">邮箱账号不填验证码，直接点继续发送重置邮件。</div></div></div><div id="forgot-reset-box" style="display:none"><div class="forgot-verified" id="forgot-verified-text"></div><div class="form-group"><label class="form-label">新密码</label><input class="form-input" id="ff-new-password" type="password" placeholder="至少8位，含字母+数字" autocomplete="new-password"></div><div class="form-group"><label class="form-label">再次输入新密码</label><input class="form-input" id="ff-confirm-password" type="password" placeholder="请再输入一次新密码" autocomplete="new-password"></div></div><div id="forgot-msg" style="font-size:12px;color:var(--text2);margin-top:8px"></div></div><div class="modal-foot"><button class="btn" onclick="closeForgotModal()">取消</button><button class="btn btn-primary" id="forgot-primary-btn" onclick="handleForgotPrimary()">继续</button></div></div></div>
 <script src="supabase.js"></script>
 <script src="xlsx.full.min.js"></script>
 
@@ -385,7 +390,7 @@ var SUPER_ADMIN_PHONE='18089502376';
 // Supabase loaded via static script tag in <head>
 var SUPABASE_URL='https://lrvsblbnyismfmithqse.supabase.co';
 var SUPABASE_KEY='sb_publishable_q77hKcjxNOa6BYQy48ilqw_t46FPDJ4';
-var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger',notificationExpanded=false,logExpanded=false,lastDataRefresh=null,loginMode='password',loginDemoIndex=0,loginDemoTimer=null;
+var supabaseClient=null,currentUser=null,userRole=null,products=[],payments=[],notifications=[],announcements=[],wechatBinding=null,pushplusBindTimer=null,activeTab='ledger',notificationExpanded=false,logExpanded=false,lastDataRefresh=null,loginMode='password',loginDemoIndex=0,loginDemoTimer=null,forgotStep='verify',forgotVerifiedLogin='',forgotResetMode='',passwordRecoveryMode=(location.hash.indexOf('type=recovery')>=0||location.search.indexOf('type=recovery')>=0);
 var GRACE_DAYS=3,accessInfo={state:'active',canRead:true,canWrite:true};
 function phoneToEmail(p){if(p.indexOf('@')>=0)return p.trim();return'user_'+p.replace(/\D/g,'')+'@rx.user'}
 function isEmailAddress(v){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
@@ -454,8 +459,17 @@ function initApp(){
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     if(d)d.textContent="initApp: client created, supabase="+(typeof supabaseClient)+" auth="+!!(supabaseClient&&supabaseClient.auth);
   }catch(e){if(d)d.textContent="initApp ERROR: "+e.message;document.getElementById('login-error').textContent='⚠ 初始化失败：'+e.message;setLoginReady(true);return;}
+  supabaseClient.auth.onAuthStateChange(function(event,session){
+    if(event==='PASSWORD_RECOVERY'){
+      passwordRecoveryMode=true;
+      currentUser=session&&session.user?session.user:null;
+      showForgotResetStep(currentUser&&currentUser.email?currentUser.email:'邮箱账号','email');
+      document.getElementById('login-error').textContent='请在弹窗中设置新密码';
+    }
+  });
   setLoginReady(true);supabaseClient.auth.getSession().then(async function(r){
     if(r.data&&r.data.session&&r.data.session.user){
+      if(passwordRecoveryMode){currentUser=r.data.session.user;showForgotResetStep(currentUser&&currentUser.email?currentUser.email:'邮箱账号','email');hideLoading();return}
       currentUser=r.data.session.user;
       if(!await ensureFreshSession(false)){handleLogout();toast('会话已过期，请重新登录');return}
       await checkUserRole();if(userRole===null){handleLogout();toast('会话已过期，请重新登录');return}var ph=currentUser.user_metadata?currentUser.user_metadata.phone||'':'';enterApp(ph);
@@ -1186,11 +1200,34 @@ document.getElementById('stock-modal-overlay').addEventListener('click',function
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeProductModal();closePaymentModal();closeAdminModal();closeForgotModal();closePayModal();closeStockModal();closeStmtModal();closeQuickStock()}});
 document.getElementById('login-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
 document.getElementById('login-otp-code').addEventListener('keydown',function(e){if(e.key==='Enter')handleLogin()});
-document.getElementById('ff-new-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleForgotPassword()});
+document.getElementById('ff-new-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleForgotPrimary()});
+document.getElementById('ff-confirm-password').addEventListener('keydown',function(e){if(e.key==='Enter')handleForgotPrimary()});
 startLoginDemoCarousel();
 initApp();
-function openForgotModal(){document.getElementById('forgot-modal-overlay').classList.remove('hidden');document.getElementById('ff-phone').value='';document.getElementById('ff-code').value='';document.getElementById('ff-new-password').value='';document.getElementById('forgot-msg').textContent=''}
+function openForgotModal(){document.getElementById('forgot-modal-overlay').classList.remove('hidden');resetForgotFlow()}
 function closeForgotModal(){document.getElementById('forgot-modal-overlay').classList.add('hidden')}
+function resetForgotFlow(){
+  forgotStep='verify';forgotVerifiedLogin='';forgotResetMode='';
+  document.getElementById('ff-phone').value='';document.getElementById('ff-code').value='';document.getElementById('ff-new-password').value='';document.getElementById('ff-confirm-password').value='';document.getElementById('forgot-msg').textContent='';
+  document.getElementById('forgot-verify-box').style.display='block';document.getElementById('forgot-reset-box').style.display='none';
+  document.getElementById('forgot-step-verify').className='forgot-step-pill active';document.getElementById('forgot-step-reset').className='forgot-step-pill';
+  document.getElementById('forgot-primary-btn').textContent='继续';
+  document.getElementById('forgot-primary-btn').disabled=false;
+  document.getElementById('forgot-note').textContent='先验证账号归属，再设置新密码。手机号需要短信验证码；邮箱账号会发送重置邮件，点邮件链接回来后再设置新密码。';
+}
+function showForgotResetStep(login,mode){
+  forgotStep='reset';forgotVerifiedLogin=login||'';forgotResetMode=mode||'phone';
+  document.getElementById('forgot-modal-overlay').classList.remove('hidden');
+  document.getElementById('forgot-verify-box').style.display='none';document.getElementById('forgot-reset-box').style.display='block';
+  document.getElementById('forgot-step-verify').className='forgot-step-pill done';document.getElementById('forgot-step-reset').className='forgot-step-pill active';
+  document.getElementById('forgot-primary-btn').textContent='确认修改密码';
+  document.getElementById('forgot-primary-btn').disabled=false;
+  document.getElementById('forgot-note').textContent='身份已验证。请输入两次完全一致的新密码，确认后立即生效。';
+  document.getElementById('forgot-verified-text').textContent='已验证账号：'+login;
+  document.getElementById('forgot-msg').textContent='';
+  document.getElementById('ff-new-password').value='';document.getElementById('ff-confirm-password').value='';
+  setTimeout(function(){document.getElementById('ff-new-password').focus()},50);
+}
 async function sendForgotOtp(){
   var phone=normalizeLoginId(document.getElementById('ff-phone').value),msg=document.getElementById('forgot-msg');msg.textContent='';
   if(!phone)return msg.textContent='请输入手机号';
@@ -1198,10 +1235,11 @@ async function sendForgotOtp(){
   if(!isValidMainlandPhone(phone)){msg.innerHTML='<span style="color:var(--red)">请输入正规中国大陆手机号</span>';return}
   var r=await withTimeout(supabaseClient.auth.signInWithOtp({phone:otpPhoneValue(phone)}),15000,'验证码发送超时，请检查网络后重试');
   if(r.error){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(r.error,'发送验证码')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
-  msg.innerHTML='<span style="color:var(--green)">验证码已发送，请查看短信。收到后输入验证码和新密码，再点继续。</span>';
+  msg.innerHTML='<span style="color:var(--green)">验证码已发送，请查看短信。收到后输入验证码，再点继续验证身份。</span>';
 }
-async function handleForgotPassword(){
-  var login=normalizeLoginId(document.getElementById('ff-phone').value),msg=document.getElementById('forgot-msg'),code=(document.getElementById('ff-code').value||'').trim(),newPw=document.getElementById('ff-new-password').value||'';
+async function handleForgotPrimary(){if(forgotStep==='reset')return submitForgotNewPassword();return verifyForgotIdentity()}
+async function verifyForgotIdentity(){
+  var login=normalizeLoginId(document.getElementById('ff-phone').value),msg=document.getElementById('forgot-msg'),code=(document.getElementById('ff-code').value||'').trim();
   if(!login){msg.textContent='请输入手机号或邮箱';return}
   if(login.indexOf('@')>=0){
     if(!isEmailAddress(login)){msg.innerHTML='<span style="color:var(--red)">邮箱格式不正确</span>';return}
@@ -1209,24 +1247,40 @@ async function handleForgotPassword(){
     try{
       var er=await supabaseClient.auth.resetPasswordForEmail(login,{redirectTo:location.href.split('#')[0]});
       if(er.error){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(er.error,'发送')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
-      msg.innerHTML='<span style="color:var(--green)">如果该邮箱账号存在，重置邮件已发送。请打开邮箱里的链接设置新密码。</span>';
+      msg.innerHTML='<span style="color:var(--green)">如果该邮箱账号存在，重置邮件已发送。请打开邮箱里的链接，回来后会自动进入第 2 步设置新密码。</span>';
     }catch(ee){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(ee,'发送')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>'}
     return;
   }
   if(!isValidMainlandPhone(login)){msg.innerHTML='<span style="color:var(--red)">请输入正规中国大陆手机号</span>';return}
   if(!code){await sendForgotOtp();return}
-  var strength=getPasswordStrength(newPw);
-  if(!strength.valid){msg.innerHTML='<span style="color:var(--red)">新密码至少8位，并包含字母和数字</span>';return}
-  msg.textContent='正在验证短信并重置密码...';
+  msg.textContent='正在验证短信验证码...';
   try{
     var vr=await withTimeout(supabaseClient.auth.verifyOtp({phone:otpPhoneValue(login),token:code,type:'sms'}),15000,'验证码验证超时，请检查网络后重试');
     if(vr.error){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(vr.error,'验证')+'</span>';return}
-    var rr=await callWxPusherFunction('reset-password-by-phone-proof',{phone:login,new_password:newPw});
-    await supabaseClient.auth.signOut();
-    currentUser=null;
-    if(rr.error){msg.innerHTML='<span style="color:var(--red)">重置失败：'+esc(rr.error)+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
-    msg.innerHTML='<span style="color:var(--green)">密码已重置，请关闭窗口后用手机号和新密码登录。</span>';
-  }catch(e){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(e,'重置')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>'}
+    currentUser=(vr.data.session||vr.data).user;
+    showForgotResetStep(login,'phone');
+  }catch(e){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(e,'验证')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>'}
+}
+async function submitForgotNewPassword(){
+  var msg=document.getElementById('forgot-msg'),newPw=document.getElementById('ff-new-password').value||'',confirmPw=document.getElementById('ff-confirm-password').value||'';
+  var strength=getPasswordStrength(newPw);
+  if(!strength.valid){msg.innerHTML='<span style="color:var(--red)">新密码至少8位，并包含字母和数字</span>';return}
+  if(newPw!==confirmPw){msg.innerHTML='<span style="color:var(--red)">两次输入的新密码不一致，请重新输入</span>';return}
+  msg.textContent='正在修改密码...';
+  try{
+    if(forgotResetMode==='email'){
+      var er=await supabaseClient.auth.updateUser({password:newPw});
+      if(er.error){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(er.error,'修改密码')+'</span>';return}
+    }else{
+      var rr=await callWxPusherFunction('reset-password-by-phone-proof',{phone:forgotVerifiedLogin,new_password:newPw});
+      if(rr.error){msg.innerHTML='<span style="color:var(--red)">重置失败：'+esc(rr.error)+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>';return}
+    }
+    await supabaseClient.auth.signOut();currentUser=null;passwordRecoveryMode=false;
+    msg.innerHTML='<span style="color:var(--green)">密码已修改成功，请关闭窗口后用新密码登录。</span>';
+    document.getElementById('forgot-primary-btn').textContent='已完成';
+    document.getElementById('forgot-primary-btn').disabled=true;
+    setLoginReady(true);
+  }catch(e){msg.innerHTML='<span style="color:var(--red)">'+authErrorText(e,'修改密码')+'<br>管理员：'+SUPER_ADMIN_PHONE+'</span>'}
 }
 // Add forgot modal to escape and click-outside handlers
 

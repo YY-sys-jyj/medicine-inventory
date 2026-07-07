@@ -459,15 +459,23 @@ function initApp(){
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
     if(d)d.textContent="initApp: client created, supabase="+(typeof supabaseClient)+" auth="+!!(supabaseClient&&supabaseClient.auth);
   }catch(e){if(d)d.textContent="initApp ERROR: "+e.message;document.getElementById('login-error').textContent='⚠ 初始化失败：'+e.message;setLoginReady(true);return;}
-  supabaseClient.auth.onAuthStateChange(function(event,session){
-    if(event==='PASSWORD_RECOVERY'){
-      passwordRecoveryMode=true;
-      currentUser=session&&session.user?session.user:null;
-      showForgotResetStep(currentUser&&currentUser.email?currentUser.email:'邮箱账号','email');
-      document.getElementById('login-error').textContent='请在弹窗中设置新密码';
-    }
-  });
+  if(supabaseClient.auth.onAuthStateChange){
+    supabaseClient.auth.onAuthStateChange(function(event,session){
+      if(event==='PASSWORD_RECOVERY'){
+        passwordRecoveryMode=true;
+        currentUser=session&&session.user?session.user:null;
+        showForgotResetStep(currentUser&&currentUser.email?currentUser.email:'邮箱账号','email');
+        document.getElementById('login-error').textContent='请在弹窗中设置新密码';
+      }
+    });
+  }
   setLoginReady(true);supabaseClient.auth.getSession().then(async function(r){
+    if(passwordRecoveryMode&&supabaseClient.auth.setSessionFromUrl){
+      var rr=await supabaseClient.auth.setSessionFromUrl();
+      if(rr.error){document.getElementById('login-error').textContent='重置链接已失效，请重新发送找回密码邮件';hideLoading();return}
+      currentUser=rr.data&&rr.data.session?rr.data.session.user:null;
+      showForgotResetStep(currentUser&&currentUser.email?currentUser.email:'邮箱账号','email');hideLoading();return
+    }
     if(r.data&&r.data.session&&r.data.session.user){
       if(passwordRecoveryMode){currentUser=r.data.session.user;showForgotResetStep(currentUser&&currentUser.email?currentUser.email:'邮箱账号','email');hideLoading();return}
       currentUser=r.data.session.user;

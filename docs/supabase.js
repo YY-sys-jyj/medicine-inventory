@@ -164,6 +164,29 @@ window.supabase = {
       });
     }
 
+    function setSessionFromUrl() {
+      var raw = (window.location.hash || "").replace(/^#/, "");
+      var params = new URLSearchParams(raw);
+      if (!params.get("access_token")) params = new URLSearchParams((window.location.search || "").replace(/^\?/, ""));
+      var accessToken = params.get("access_token");
+      if (!accessToken) return Promise.resolve({ data: null, error: { message: "No recovery token", status: 400 } });
+      var expiresIn = parseInt(params.get("expires_in") || "3600", 10);
+      var session = {
+        access_token: accessToken,
+        refresh_token: params.get("refresh_token") || null,
+        expires_at: Math.floor(Date.now() / 1000) + (isNaN(expiresIn) ? 3600 : expiresIn),
+        user: null
+      };
+      setSessionData(session);
+      return api("/auth/v1/user").then(function(r) {
+        if (!r.error && r.data) {
+          session.user = r.data;
+          setSessionData(session);
+        }
+        return { data: { session: session }, error: r.error || null };
+      });
+    }
+
     function QB(table) {
       var qb = {};
       var _filters = [], _order = null, _ascending = true, _limit = null, _single = false, _cols = "*";
@@ -230,10 +253,31 @@ window.supabase = {
         getSession: function() { return Promise.resolve({ data: readStoredSession(), error: null }); },
         refreshSession: function() { return refreshSessionInternal(); },
         _setSession: setSessionData,
+        setSessionFromUrl: setSessionFromUrl,
         signInWithPassword: function(opts) {
           return api("/auth/v1/token?grant_type=password", {
             method: "POST",
             body: { email: opts.email, password: opts.password, gotrue_meta_security: {} },
+            headers: { Authorization: "Bearer " + key }
+          }).then(function(r) { if (!r.error && r.data) setSessionData(r.data); return normAuth(r); });
+        },
+        signInWithOtp: function(opts) {
+          var body = { create_user: opts.shouldCreateUser !== false, gotrue_meta_security: {} };
+          if (opts.phone) body.phone = opts.phone;
+          if (opts.email) body.email = opts.email;
+          return api("/auth/v1/otp", {
+            method: "POST",
+            body: body,
+            headers: { Authorization: "Bearer " + key }
+          });
+        },
+        verifyOtp: function(opts) {
+          var body = { token: opts.token, type: opts.type || (opts.phone ? "sms" : "email") };
+          if (opts.phone) body.phone = opts.phone;
+          if (opts.email) body.email = opts.email;
+          return api("/auth/v1/verify", {
+            method: "POST",
+            body: body,
             headers: { Authorization: "Bearer " + key }
           }).then(function(r) { if (!r.error && r.data) setSessionData(r.data); return normAuth(r); });
         },
@@ -250,7 +294,17 @@ window.supabase = {
           headers.Authorization = "Bearer " + key;
           return api("/auth/v1/logout", { method: "POST" });
         },
-        resetPasswordForEmail: function(opts) { return api("/auth/v1/recover", { method: "POST", body: { email: opts.email } }); },
+        resetPasswordForEmail: function(emailOrOpts, options) {
+          var email = typeof emailOrOpts === "string" ? emailOrOpts : emailOrOpts.email;
+          var redirectTo = (options && options.redirectTo) || (typeof emailOrOpts === "object" && emailOrOpts.redirectTo);
+          var path = "/auth/v1/recover";
+          if (redirectTo) path += "?redirect_to=" + encodeURIComponent(redirectTo);
+          return api(path, {
+            method: "POST",
+            body: { email: email, gotrue_meta_security: {} },
+            headers: { Authorization: "Bearer " + key }
+          });
+        },
         updateUser: function(opts) { return api("/auth/v1/user", { method: "PUT", body: opts }); }
       },
       from: function(table) { return QB(table); }

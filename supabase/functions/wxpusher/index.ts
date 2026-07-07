@@ -36,6 +36,7 @@ function beijingParts(date = new Date()) {
     month: shifted.getUTCMonth() + 1,
     day: shifted.getUTCDate(),
     hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
   };
 }
 
@@ -46,6 +47,31 @@ function beijingDateKey(date = new Date()) {
 
 function reminderSlot(date = new Date()) {
   return beijingParts(date).hour < 12 ? "am" : "pm";
+}
+
+function timeToMinutes(value: any, fallback: string) {
+  const text = String(value || fallback || "").trim();
+  const match = text.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return timeToMinutes(fallback === text ? "08:00" : fallback, "08:00");
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function reminderSchedule(binding: any) {
+  return {
+    morningEnabled: binding?.reminder_morning_enabled !== false,
+    eveningEnabled: binding?.reminder_evening_enabled !== false,
+    morningTime: String(binding?.reminder_morning_time || "08:00"),
+    eveningTime: String(binding?.reminder_evening_time || "17:00"),
+  };
+}
+
+function isReminderDueNow(binding: any, date = new Date()) {
+  const schedule = reminderSchedule(binding);
+  const parts = beijingParts(date);
+  const nowMinutes = parts.hour * 60 + parts.minute;
+  const slot = reminderSlot(date);
+  if (slot === "am") return schedule.morningEnabled && nowMinutes >= timeToMinutes(schedule.morningTime, "08:00");
+  return schedule.eveningEnabled && nowMinutes >= timeToMinutes(schedule.eveningTime, "17:00");
 }
 
 function dateOnlyMs(dateText: string) {
@@ -586,11 +612,16 @@ Deno.serve(async (req) => {
       let failed = 0;
       let boundUsers = 0;
       let skippedNoBinding = 0;
+      let skippedNotDue = 0;
       let pushedUsers = 0;
       for (const userId of built.userIds) {
         const binding = await bindingFor(admin, userId);
         if (!hasPushChannel(binding)) {
           skippedNoBinding++;
+          continue;
+        }
+        if (!isReminderDueNow(binding)) {
+          skippedNotDue++;
           continue;
         }
         boundUsers++;
@@ -600,7 +631,7 @@ Deno.serve(async (req) => {
         if ((r.sent || 0) > 0) pushedUsers++;
       }
       const cleanup = await cleanupOldOperationalData(admin);
-      return json({ ok: true, dateKey: built.dateKey, slot: built.slot, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, pushedUsers, created: built.created, sent, failed, cleanup });
+      return json({ ok: true, dateKey: built.dateKey, slot: built.slot, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, skippedNotDue, pushedUsers, created: built.created, sent, failed, cleanup });
     }
 
     const user = await authedUser(req, admin);

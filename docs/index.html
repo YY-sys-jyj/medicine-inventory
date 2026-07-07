@@ -823,6 +823,24 @@ async function loadWechatBinding(){
   var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').select('*').eq('user_id',currentUser.id).maybeSingle()});
   wechatBinding=r.data||null;return r;
 }
+function reminderTimeValue(key,fallback){var v=wechatBinding&&wechatBinding[key]?String(wechatBinding[key]):fallback;return/^\d{2}:\d{2}$/.test(v)?v:fallback}
+function reminderEnabledValue(key){return!wechatBinding||wechatBinding[key]!==false}
+function timeTextToMinutes(v){var m=String(v||'').match(/^([01]\d|2[0-3]):([0-5]\d)$/);return m?Number(m[1])*60+Number(m[2]):-1}
+function reminderScheduleControls(){
+  var mt=reminderTimeValue('reminder_morning_time','08:00'),et=reminderTimeValue('reminder_evening_time','17:00'),me=reminderEnabledValue('reminder_morning_enabled'),ee=reminderEnabledValue('reminder_evening_enabled');
+  return '<div class="admin-section" style="margin-bottom:18px"><h3>自动提醒时间</h3><div class="readonly-note">按北京时间发送。系统每 10 分钟检查一次，到你设置的时间后，会把药品效期汇总和医院回款汇总分别推送到微信；同一时段不会重复发送。</div><div class="form-row"><div class="form-group"><label class="form-label">上午提醒</label><div class="login-otp-row"><input class="form-input" type="time" id="reminder-morning-time" value="'+esc(mt)+'"><select class="form-input" id="reminder-morning-enabled"><option value="true" '+(me?'selected':'')+'>开启</option><option value="false" '+(!me?'selected':'')+'>暂停</option></select></div></div><div class="form-group"><label class="form-label">下午提醒</label><div class="login-otp-row"><input class="form-input" type="time" id="reminder-evening-time" value="'+esc(et)+'"><select class="form-input" id="reminder-evening-enabled"><option value="true" '+(ee?'selected':'')+'>开启</option><option value="false" '+(!ee?'selected':'')+'>暂停</option></select></div></div></div><button class="btn btn-primary btn-sm" onclick="saveReminderSchedule()">保存提醒时间</button></div>';
+}
+function readReminderScheduleInputs(){
+  var mt=(document.getElementById('reminder-morning-time')&&document.getElementById('reminder-morning-time').value)||'08:00';
+  var et=(document.getElementById('reminder-evening-time')&&document.getElementById('reminder-evening-time').value)||'17:00';
+  var me=(document.getElementById('reminder-morning-enabled')&&document.getElementById('reminder-morning-enabled').value)!=='false';
+  var ee=(document.getElementById('reminder-evening-enabled')&&document.getElementById('reminder-evening-enabled').value)!=='false';
+  var mm=timeTextToMinutes(mt),em=timeTextToMinutes(et);
+  if(mm<0||em<0){toast('请选择正确的提醒时间');return null}
+  if(me&&mm>=12*60){toast('上午提醒请设置在 00:00-11:59 之间，或暂停上午提醒');return null}
+  if(ee&&em<12*60){toast('下午提醒请设置在 12:00-23:59 之间，或暂停下午提醒');return null}
+  return{reminder_morning_time:mt,reminder_evening_time:et,reminder_morning_enabled:me,reminder_evening_enabled:ee};
+}
 function renderNotificationHeadActions(){
   var box=document.getElementById('notification-head-actions');if(!box)return;
   if(isAdminRole())box.innerHTML='<button class="btn btn-sm" onclick="generateReminderNotifications(false)">立即检查提醒</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">补发未推送</button><button class="btn btn-sm" onclick="exportNotificationExcel(\'product\')">导出药品Excel</button><button class="btn btn-sm" onclick="exportNotificationExcel(\'payment\')">导出医院Excel</button><button class="btn btn-sm" onclick="markAllNotificationsRead()">全部已读</button><button class="btn btn-sm" onclick="renderNotifications()">刷新</button>';
@@ -836,25 +854,27 @@ async function renderWechatBindBox(){
   var wxState=uid?'<span class="badge '+(wxEnabled?'badge-green':'badge-yellow')+'">'+(wxEnabled?'WxPusher 已绑定':'WxPusher 已暂停')+'</span>':'<span class="badge badge-yellow">WxPusher 未绑定</span>';
   var pushState=pr?'<span class="badge '+(wechatBinding&&wechatBinding.pushplus_enabled?'badge-green':'badge-yellow')+'">PushPlus '+(wechatBinding&&wechatBinding.pushplus_enabled?'已绑定':'已保存但暂停')+'</span>':'<span class="badge badge-yellow">PushPlus 未绑定</span>';
   var pushNick=wechatBinding&&wechatBinding.pushplus_friend_nick?'，'+esc(wechatBinding.pushplus_friend_nick):'';
+  var scheduleHtml=reminderScheduleControls();
   if(!isAdminRole()){
     var bound=!!(uid||pr),simpleState=bound?'<span class="badge badge-green">微信提醒已绑定</span>':'<span class="badge badge-yellow">微信提醒未绑定</span>';
     var who=pr?(wechatBinding&&wechatBinding.pushplus_friend_nick?'已绑定：'+esc(wechatBinding.pushplus_friend_nick):'已绑定接收账号'):(uid?'已绑定 WxPusher':'扫码后自动绑定本账号');
     var unbindBtn=bound?'<button class="btn btn-sm btn-danger" onclick="unbindAllPushChannels()">解除绑定</button>':'';
-    box.innerHTML=err+'<div class="admin-section" style="margin-bottom:18px"><h3>微信提醒绑定</h3><div class="readonly-note">扫码绑定后，系统会在早上 7:50 和下午 4:50 自动把本账号的药品效期、医院回款提醒发到你的微信接收端。换手机或换账号时，先解除绑定，再重新扫码。</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+simpleState+'<span class="badge badge-green">'+who+'</span></div><div class="btn-group"><button class="btn btn-primary btn-sm" onclick="createPushplusBindQr()">生成绑定二维码</button>'+unbindBtn+'</div><div id="pushplus-qr-box" style="margin-top:12px"></div></div>';
+    box.innerHTML=err+scheduleHtml+'<div class="admin-section" style="margin-bottom:18px"><h3>微信提醒绑定</h3><div class="readonly-note">扫码绑定后，系统会按你上面设置的时间，自动把本账号的药品效期、医院回款提醒发到你的微信接收端。换手机或换账号时，先解除绑定，再重新扫码。</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+simpleState+'<span class="badge badge-green">'+who+'</span></div><div class="btn-group"><button class="btn btn-primary btn-sm" onclick="createPushplusBindQr()">生成绑定二维码</button>'+unbindBtn+'</div><div id="pushplus-qr-box" style="margin-top:12px"></div></div>';
     if(!bound)setTimeout(function(){createPushplusBindQr()},0);
     return;
   }
   var wxUnbind=uid?'<button class="btn btn-sm btn-danger" onclick="unbindWxPusher()">解除 WxPusher</button>':'';
   var pushUnbind=pr?'<button class="btn btn-sm btn-danger" onclick="unbindPushPlus()">解除 PushPlus</button>':'';
-  box.innerHTML=err+'<div class="admin-section" style="margin-bottom:18px"><h3>微信提醒绑定</h3><div class="readonly-note">客户只需绑定自己的接收账号：打开 WxPusher，复制自己的 UID，粘贴保存后点“发送测试”。以后无需登录网页，系统会在早上 7:50 和下午 4:50 自动把本账号的药品效期、医院回款提醒发到绑定账号。换手机或换接收账号时，先解除旧绑定，再保存新的 UID。</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+wxState+pushState+'</div><div class="form-row"><div class="form-group"><label class="form-label">客户自己的 WxPusher UID</label><input class="form-input" id="wxpusher-uid" placeholder="例如 UID_xxxxx" value="'+esc(uid)+'"></div><div class="form-group"><label class="form-label">WxPusher 状态</label><select class="form-input" id="wxpusher-enabled"><option value="true" '+(wxEnabled?'selected':'')+'>开启 WxPusher</option><option value="false" '+(!wxEnabled?'selected':'')+'>暂停 WxPusher</option></select></div></div><div class="btn-group" style="margin-bottom:14px"><a class="btn btn-sm" href="https://wxpusher.zjiecode.com/" target="_blank" rel="noopener">下载/打开 WxPusher</a><button class="btn btn-primary btn-sm" onclick="saveWechatBinding()">保存绑定</button><button class="btn btn-sm" onclick="sendWechatTest()">发送测试</button>'+wxUnbind+'</div><div class="form-row"><div class="form-group"><label class="form-label">PushPlus 接收令牌（备用通道）</label><input class="form-input" id="pushplus-receiver" placeholder="生成绑定二维码后会自动填入" value="'+esc(pr)+'"></div><div class="form-group"><label class="form-label">PushPlus 状态</label><select class="form-input" id="pushplus-enabled"><option value="true" '+(wechatBinding&&wechatBinding.pushplus_enabled?'selected':'')+'>开启 PushPlus</option><option value="false" '+(!wechatBinding||!wechatBinding.pushplus_enabled?'selected':'')+'>暂停 PushPlus</option></select></div></div><div class="btn-group"><button class="btn btn-sm" onclick="createPushplusBindQr()">生成 PushPlus 备用二维码</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">补发未推送</button>'+pushUnbind+'</div><div id="pushplus-qr-box" style="margin-top:12px"></div><p style="font-size:12px;color:'+(pr?'var(--success)':'var(--text3)')+';margin-top:8px">'+(pr?'PushPlus 备用通道已绑定'+pushNick+'。':'PushPlus 是备用线路；如 WxPusher 收不到，可让客户扫码绑定备用通道。')+'</p></div>';
+  box.innerHTML=err+scheduleHtml+'<div class="admin-section" style="margin-bottom:18px"><h3>微信提醒绑定</h3><div class="readonly-note">客户只需绑定自己的接收账号：打开 WxPusher，复制自己的 UID，粘贴保存后点“发送测试”。以后无需登录网页，系统会按上方设置的时间自动把本账号的药品效期、医院回款提醒发到绑定账号。换手机或换接收账号时，先解除旧绑定，再保存新的 UID。</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+wxState+pushState+'</div><div class="form-row"><div class="form-group"><label class="form-label">客户自己的 WxPusher UID</label><input class="form-input" id="wxpusher-uid" placeholder="例如 UID_xxxxx" value="'+esc(uid)+'"></div><div class="form-group"><label class="form-label">WxPusher 状态</label><select class="form-input" id="wxpusher-enabled"><option value="true" '+(wxEnabled?'selected':'')+'>开启 WxPusher</option><option value="false" '+(!wxEnabled?'selected':'')+'>暂停 WxPusher</option></select></div></div><div class="btn-group" style="margin-bottom:14px"><a class="btn btn-sm" href="https://wxpusher.zjiecode.com/" target="_blank" rel="noopener">下载/打开 WxPusher</a><button class="btn btn-primary btn-sm" onclick="saveWechatBinding()">保存绑定</button><button class="btn btn-sm" onclick="sendWechatTest()">发送测试</button>'+wxUnbind+'</div><div class="form-row"><div class="form-group"><label class="form-label">PushPlus 接收令牌（备用通道）</label><input class="form-input" id="pushplus-receiver" placeholder="生成绑定二维码后会自动填入" value="'+esc(pr)+'"></div><div class="form-group"><label class="form-label">PushPlus 状态</label><select class="form-input" id="pushplus-enabled"><option value="true" '+(wechatBinding&&wechatBinding.pushplus_enabled?'selected':'')+'>开启 PushPlus</option><option value="false" '+(!wechatBinding||!wechatBinding.pushplus_enabled?'selected':'')+'>暂停 PushPlus</option></select></div></div><div class="btn-group"><button class="btn btn-sm" onclick="createPushplusBindQr()">生成 PushPlus 备用二维码</button><button class="btn btn-sm" onclick="pushMyRemindersToWechat()">补发未推送</button>'+pushUnbind+'</div><div id="pushplus-qr-box" style="margin-top:12px"></div><p style="font-size:12px;color:'+(pr?'var(--success)':'var(--text3)')+';margin-top:8px">'+(pr?'PushPlus 备用通道已绑定'+pushNick+'。':'PushPlus 是备用线路；如 WxPusher 收不到，可让客户扫码绑定备用通道。')+'</p></div>';
 }
 async function saveWechatBinding(){
   if(!currentUser)return;
   var uidv=(document.getElementById('wxpusher-uid').value||'').trim(),enabled=document.getElementById('wxpusher-enabled').value==='true',pr=(document.getElementById('pushplus-receiver').value||'').trim(),penabled=document.getElementById('pushplus-enabled').value==='true';
+  var schedule=readReminderScheduleInputs();if(!schedule)return;
   if(penabled&&!pr)return toast('开启 PushPlus 需要填写接收令牌');
   if(!uidv&&!pr)return toast('请至少填写 WxPusher UID 或 PushPlus 接收令牌');
   showLoading('保存推送绑定...');
-  var row={user_id:currentUser.id,wxpusher_uid:uidv,enabled:enabled,pushplus_receiver:pr,pushplus_enabled:penabled,updated_at:new Date().toISOString()};
+  var row=Object.assign({user_id:currentUser.id,wxpusher_uid:uidv,enabled:enabled,pushplus_receiver:pr,pushplus_enabled:penabled,updated_at:new Date().toISOString()},schedule);
   var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});
   if(!r.error){await loadWechatBinding()}
   if(!wechatBinding){
@@ -865,6 +885,22 @@ async function saveWechatBinding(){
   }
   hideLoading();if(r.error)return toast('保存失败：'+(r.error.message||JSON.stringify(r.error))+'，请先执行最新 PushPlus SQL');
   await renderWechatBindBox();toast('推送绑定已保存');
+}
+async function saveReminderSchedule(){
+  if(!currentUser)return;
+  var schedule=readReminderScheduleInputs();if(!schedule)return;
+  showLoading('保存提醒时间...');
+  var row=Object.assign({user_id:currentUser.id,updated_at:new Date().toISOString()},schedule);
+  var r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});
+  if(!r.error){await loadWechatBinding()}
+  if(!wechatBinding){
+    r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').insert(row)});
+    if(r.error&&(r.error.status===409||String(r.error.message||'').indexOf('duplicate key')>=0)){
+      r=await runAuthQuery(function(){return supabaseClient.from('wechat_bindings').update(row).eq('user_id',currentUser.id)});
+    }
+  }
+  hideLoading();if(r.error)return toast('保存失败：'+(r.error.message||JSON.stringify(r.error))+'，请先执行提醒时间 SQL');
+  await renderWechatBindBox();toast('提醒时间已保存');
 }
 async function unbindWxPusher(){
   if(!currentUser)return;

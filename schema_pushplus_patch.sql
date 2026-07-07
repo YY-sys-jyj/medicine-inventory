@@ -25,6 +25,18 @@ alter table public.wechat_bindings
 add column if not exists pushplus_enabled boolean not null default false;
 
 alter table public.wechat_bindings
+add column if not exists reminder_morning_time text not null default '08:00';
+
+alter table public.wechat_bindings
+add column if not exists reminder_evening_time text not null default '17:00';
+
+alter table public.wechat_bindings
+add column if not exists reminder_morning_enabled boolean not null default true;
+
+alter table public.wechat_bindings
+add column if not exists reminder_evening_enabled boolean not null default true;
+
+alter table public.wechat_bindings
 alter column wxpusher_uid drop not null;
 
 alter table public.wechat_bindings

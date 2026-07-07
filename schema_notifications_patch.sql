@@ -45,6 +45,10 @@ create table if not exists public.wechat_bindings (
   enabled boolean not null default true,
   pushplus_token text default '',
   pushplus_enabled boolean not null default false,
+  reminder_morning_time text not null default '08:00',
+  reminder_evening_time text not null default '17:00',
+  reminder_morning_enabled boolean not null default true,
+  reminder_evening_enabled boolean not null default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -59,6 +63,18 @@ add column if not exists pushplus_token text default '';
 
 alter table public.wechat_bindings
 add column if not exists pushplus_enabled boolean not null default false;
+
+alter table public.wechat_bindings
+add column if not exists reminder_morning_time text not null default '08:00';
+
+alter table public.wechat_bindings
+add column if not exists reminder_evening_time text not null default '17:00';
+
+alter table public.wechat_bindings
+add column if not exists reminder_morning_enabled boolean not null default true;
+
+alter table public.wechat_bindings
+add column if not exists reminder_evening_enabled boolean not null default true;
 
 alter table public.wechat_bindings
 alter column wxpusher_uid drop not null;

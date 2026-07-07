@@ -2,9 +2,9 @@ name: Daily reminder push
 
 on:
   schedule:
-    # Beijing time 07:50 and 16:50, before work and before leaving work.
-    - cron: "50 23 * * *"
-    - cron: "50 8 * * *"
+    # Check every 10 minutes. The Edge Function sends only when each user reaches
+    # their own reminder time configured in Notification Center.
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 concurrency:

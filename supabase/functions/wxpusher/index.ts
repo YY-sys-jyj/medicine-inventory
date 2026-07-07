@@ -45,6 +45,11 @@ function beijingDateKey(date = new Date()) {
   return `${p.year}-${pad2(p.month)}-${pad2(p.day)}`;
 }
 
+function beijingNowText(date = new Date()) {
+  const p = beijingParts(date);
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)} ${pad2(p.hour)}:${pad2(p.minute)}`;
+}
+
 function reminderSlot(date = new Date()) {
   return beijingParts(date).hour < 12 ? "am" : "pm";
 }
@@ -72,6 +77,22 @@ function isReminderDueNow(binding: any, date = new Date()) {
   const slot = reminderSlot(date);
   if (slot === "am") return schedule.morningEnabled && nowMinutes >= timeToMinutes(schedule.morningTime, "08:00");
   return schedule.eveningEnabled && nowMinutes >= timeToMinutes(schedule.eveningTime, "17:00");
+}
+
+function reminderScheduleStatus(binding: any, date = new Date()) {
+  const schedule = reminderSchedule(binding);
+  const slot = reminderSlot(date);
+  const currentEnabled = slot === "am" ? schedule.morningEnabled : schedule.eveningEnabled;
+  const currentTargetTime = slot === "am" ? schedule.morningTime : schedule.eveningTime;
+  return {
+    beijingNow: beijingNowText(date),
+    slot,
+    schedule,
+    currentEnabled,
+    currentTargetTime,
+    dueNow: isReminderDueNow(binding, date),
+    hasBinding: !!binding,
+  };
 }
 
 function dateOnlyMs(dateText: string) {
@@ -662,6 +683,11 @@ Deno.serve(async (req) => {
 
     const role = await userRole(admin, user.id);
     if (!activeOrGrace(role)) return json({ error: "服务已暂停，不能发送微信提醒" }, 403);
+
+    if (action === "reminder-schedule-status") {
+      const binding = await bindingFor(admin, user.id);
+      return json({ ok: true, ...reminderScheduleStatus(binding) });
+    }
 
     if (action === "pushplus-create-bind-qr") {
       const qr = await createPushPlusBindQr(admin, user.id, pushplusToken, pushplusSecretKey);

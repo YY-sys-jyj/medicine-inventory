@@ -312,6 +312,54 @@ function notificationPriority(n: any) {
   return { severityRank, daysRank };
 }
 
+function notificationGroupKey(n: any) {
+  const source = String(n?.source_type || "");
+  const type = String(n?.type || "");
+  const title = String(n?.title || "");
+  if (source === "product" || type.startsWith("product") || title.includes("药品")) return "product";
+  if (source === "payment" || type.startsWith("payment") || title.includes("医院") || title.includes("回款")) return "payment";
+  return "other";
+}
+
+function severityText(severity: any) {
+  if (severity === "red") return "红灯";
+  if (severity === "yellow") return "黄灯";
+  if (severity === "green") return "绿灯";
+  return "提醒";
+}
+
+function cleanNotificationTitle(title: any) {
+  return String(title || "")
+    .replace(/^药品3天内到期[：:]\s*/, "")
+    .replace(/^药品红灯预警[：:]\s*/, "")
+    .replace(/^医院回款已到期[：:]\s*/, "")
+    .replace(/^医院回款提醒[：:]\s*/, "")
+    .trim();
+}
+
+function cleanNotificationContent(content: any) {
+  return String(content || "").replace(/\s+/g, " ").trim();
+}
+
+function buildBatchTitle(kind: string, list: any[]) {
+  const red = list.filter((n: any) => n.severity === "red").length;
+  const yellow = list.filter((n: any) => n.severity === "yellow").length;
+  if (kind === "product") return `药品效期提醒汇总（${list.length}条，红灯${red}条）`;
+  if (kind === "payment") return `医院回款提醒汇总（${list.length}条，红灯${red}条，黄灯${yellow}条）`;
+  return `系统提醒汇总（${list.length}条）`;
+}
+
+function buildBatchContent(kind: string, list: any[]) {
+  const label = kind === "product" ? "药品效期" : kind === "payment" ? "医院回款" : "系统";
+  const lines = list.slice(0, 20).map((n: any, index: number) => {
+    const title = cleanNotificationTitle(n.title);
+    const content = cleanNotificationContent(n.content);
+    return `${index + 1}. 【${severityText(n.severity)}】${title}\n   ${content}`;
+  });
+  const more = list.length > 20 ? `\n\n还有 ${list.length - 20} 条未展开，请登录系统查看完整明细。` : "";
+  return `本次共有 ${list.length} 条${label}提醒，已按紧急程度排序。\n\n${lines.join("\n")}${more}`;
+}
+
 function paymentContactText(p: any) {
   const parts = [`联系人 ${p.contact || "-"}`];
   if (p.role) parts.push(`职务 ${p.role}`);
@@ -363,6 +411,49 @@ async function sendOneNotification(admin: any, appToken: string, pushplusToken: 
   return { ok: channelSent > 0, sent: channelSent > 0 ? 1 : 0, failed: channelSent > 0 ? 0 : (channelFailed > 0 ? 1 : 0), channelSent, channelFailed };
 }
 
+async function sendNotificationBatch(admin: any, appToken: string, pushplusToken: string, notifications: any[], binding: any, kind: string) {
+  if (!notifications.length) return { ok: true, sent: 0, failed: 0, itemCount: 0 };
+  let channelSent = 0;
+  let channelFailed = 0;
+  const now = new Date().toISOString();
+  const patch: Record<string, string | null> = {};
+  const ids = notifications.map((n: any) => n.id).filter(Boolean);
+  const receiver = pushplusReceiver(binding);
+  const title = buildBatchTitle(kind, notifications);
+  const content = buildBatchContent(kind, notifications);
+  if (binding.pushplus_enabled && receiver) try {
+    if (!pushplusToken) throw new Error("PushPlus 系统发送 Token 未配置");
+    await sendPushPlus(pushplusToken, receiver, title, content);
+    patch.pushplus_sent_at = now;
+    patch.pushplus_error = null;
+    channelSent++;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    patch.pushplus_error = message;
+    channelFailed++;
+  }
+  if (!channelSent && binding.enabled === true && binding.wxpusher_uid) try {
+    if (!appToken) throw new Error("WxPusher 系统 AppToken 未配置");
+    await sendWx(appToken, binding.wxpusher_uid, title, content);
+    patch.wxpusher_sent_at = now;
+    patch.wxpusher_error = null;
+    channelSent++;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    patch.wxpusher_error = message;
+    channelFailed++;
+  }
+  if (Object.keys(patch).length && ids.length) await admin.from("notification_events").update(patch).in("id", ids);
+  return {
+    ok: channelSent > 0,
+    sent: channelSent > 0 ? 1 : 0,
+    failed: channelSent > 0 ? 0 : (channelFailed > 0 ? 1 : 0),
+    itemCount: notifications.length,
+    channelSent,
+    channelFailed,
+  };
+}
+
 async function pushUserReminders(admin: any, appToken: string, pushplusToken: string, userId: string, limit = 20) {
   const binding = await bindingFor(admin, userId);
   if (!hasPushChannel(binding)) throw new Error("请先在通知中心绑定推送通道");
@@ -370,10 +461,11 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(limit * 2);
+    .limit(Math.max(limit * 6, 100));
   if (error) throw new Error(error.message);
   let sent = 0;
   let failed = 0;
+  let itemCount = 0;
   const pending = (data || []).filter((n: any) =>
     !n.wxpusher_sent_at &&
     !n.pushplus_sent_at &&
@@ -386,13 +478,18 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
     if (pa.severityRank !== pb.severityRank) return pa.severityRank - pb.severityRank;
     if (pa.daysRank !== pb.daysRank) return pa.daysRank - pb.daysRank;
     return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-  }).slice(0, limit);
-  for (const n of pending) {
-    const r = await sendOneNotification(admin, appToken, pushplusToken, n, binding);
+  });
+  const groups: Record<string, any[]> = { product: [], payment: [], other: [] };
+  for (const n of pending) groups[notificationGroupKey(n)].push(n);
+  for (const kind of ["product", "payment"]) {
+    const batch = groups[kind].slice(0, limit);
+    if (!batch.length) continue;
+    const r = await sendNotificationBatch(admin, appToken, pushplusToken, batch, binding, kind);
     sent += r.sent || 0;
     failed += r.failed || 0;
+    itemCount += r.itemCount || 0;
   }
-  return { sent, failed };
+  return { sent, failed, itemCount };
 }
 
 async function buildDailyNotifications(admin: any) {

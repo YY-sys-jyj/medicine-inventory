@@ -635,24 +635,64 @@ Deno.serve(async (req) => {
       let skippedNoBinding = 0;
       let skippedNotDue = 0;
       let pushedUsers = 0;
+      const scheduleDetails: any[] = [];
+      const nowBeijing = beijingNowText();
       for (const userId of built.userIds) {
         const binding = await bindingFor(admin, userId);
         if (!hasPushChannel(binding)) {
           skippedNoBinding++;
           continue;
         }
-        if (!isReminderDueNow(binding)) {
+        const status = reminderScheduleStatus(binding);
+        if (!status.dueNow) {
           skippedNotDue++;
+          scheduleDetails.push({
+            userId,
+            beijingNow: status.beijingNow,
+            slot: status.slot,
+            morning: status.schedule.morningEnabled ? status.schedule.morningTime : "paused",
+            evening: status.schedule.eveningEnabled ? status.schedule.eveningTime : "paused",
+            currentEnabled: status.currentEnabled,
+            currentTargetTime: status.currentTargetTime,
+            dueNow: false,
+            reason: `Beijing ${status.beijingNow}, slot ${status.slot}, target ${status.currentTargetTime} (${status.currentEnabled ? "on" : "off"}), not yet due`,
+          });
           continue;
         }
         boundUsers++;
+        scheduleDetails.push({
+          userId,
+          beijingNow: status.beijingNow,
+          slot: status.slot,
+          morning: status.schedule.morningEnabled ? status.schedule.morningTime : "paused",
+          evening: status.schedule.eveningEnabled ? status.schedule.eveningTime : "paused",
+          currentEnabled: status.currentEnabled,
+          currentTargetTime: status.currentTargetTime,
+          dueNow: true,
+          reason: `Beijing ${status.beijingNow}, slot ${status.slot}, target ${status.currentTargetTime}, due now, pushing`,
+        });
         const r = await pushUserReminders(admin, appToken, pushplusToken, userId, 20);
         sent += r.sent;
         failed += r.failed;
         if ((r.sent || 0) > 0) pushedUsers++;
       }
       const cleanup = await cleanupOldOperationalData(admin);
-      return json({ ok: true, dateKey: built.dateKey, slot: built.slot, activeUsers: built.userIds.length, boundUsers, skippedNoBinding, skippedNotDue, pushedUsers, created: built.created, sent, failed, cleanup });
+      return json({
+        ok: true,
+        serverBeijingNow: nowBeijing,
+        dateKey: built.dateKey,
+        slot: built.slot,
+        activeUsers: built.userIds.length,
+        boundUsers,
+        skippedNoBinding,
+        skippedNotDue,
+        pushedUsers,
+        created: built.created,
+        sent,
+        failed,
+        scheduleDetails,
+        cleanup,
+      });
     }
 
     const user = await authedUser(req, admin);

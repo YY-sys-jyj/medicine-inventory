@@ -515,10 +515,7 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
   let itemCount = 0;
   const pending = (data || []).filter((n: any) =>
     !n.wxpusher_sent_at &&
-    !n.pushplus_sent_at &&
-    !n.wxpusher_error &&
-    !n.pushplus_error &&
-    hasPushChannel(binding)
+    !n.pushplus_sent_at
   ).sort((a: any, b: any) => {
     const pa = notificationPriority(a);
     const pb = notificationPriority(b);
@@ -537,6 +534,26 @@ async function pushUserReminders(admin: any, appToken: string, pushplusToken: st
     itemCount += r.itemCount || 0;
   }
   return { sent, failed, itemCount };
+}
+
+async function pendingReminderStats(admin: any, userId: string) {
+  const { data, error } = await admin.from("notification_events")
+    .select("id,type,source_type,title,wxpusher_sent_at,pushplus_sent_at,wxpusher_error,pushplus_error")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  if (error) return { total: 0, product: 0, payment: 0, failed: 0, error: error.message };
+  let product = 0;
+  let payment = 0;
+  let failed = 0;
+  for (const n of data || []) {
+    if (n.wxpusher_sent_at || n.pushplus_sent_at) continue;
+    const group = notificationGroupKey(n);
+    if (group === "product") product++;
+    else if (group === "payment") payment++;
+    if (n.wxpusher_error || n.pushplus_error) failed++;
+  }
+  return { total: product + payment, product, payment, failed };
 }
 
 async function buildDailyNotifications(admin: any) {
@@ -726,7 +743,8 @@ Deno.serve(async (req) => {
 
     if (action === "reminder-schedule-status") {
       const binding = await bindingFor(admin, user.id);
-      return json({ ok: true, ...reminderScheduleStatus(binding) });
+      const pending = await pendingReminderStats(admin, user.id);
+      return json({ ok: true, ...reminderScheduleStatus(binding), pending });
     }
 
     if (action === "pushplus-create-bind-qr") {
